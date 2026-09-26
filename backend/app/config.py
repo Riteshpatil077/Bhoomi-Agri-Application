@@ -20,17 +20,22 @@ class BaseConfig:
     # ------------------------------------------------------------------ #
     # Database                                                             #
     # ------------------------------------------------------------------ #
-    SQLALCHEMY_DATABASE_URI: str = os.environ.get(
+    _db_uri = os.environ.get(
         "DATABASE_URL",
         "postgresql://bhoomi:bhoomi@localhost:5432/bhoomi_db",
     )
+    SQLALCHEMY_DATABASE_URI: str = _db_uri
     SQLALCHEMY_TRACK_MODIFICATIONS: bool = False
-    SQLALCHEMY_ENGINE_OPTIONS: dict = {
-        "pool_pre_ping": True,
-        "pool_recycle": 300,
-        "pool_size": 10,
-        "max_overflow": 20,
-    }
+    SQLALCHEMY_ENGINE_OPTIONS: dict = (
+        {"connect_args": {"check_same_thread": False}}
+        if _db_uri.startswith("sqlite")
+        else {
+            "pool_pre_ping": True,
+            "pool_recycle": 300,
+            "pool_size": 10,
+            "max_overflow": 20,
+        }
+    )
 
     # ------------------------------------------------------------------ #
     # Redis / Celery                                                       #
@@ -103,10 +108,6 @@ class BaseConfig:
 class DevelopmentConfig(BaseConfig):
     DEBUG = True
     JWT_COOKIE_SECURE = False  # Allow HTTP in local dev
-    SQLALCHEMY_DATABASE_URI: str = os.environ.get(
-        "DATABASE_URL",
-        "postgresql://bhoomi:bhoomi@localhost:5432/bhoomi_db",
-    )
 
 
 class TestingConfig(BaseConfig):
