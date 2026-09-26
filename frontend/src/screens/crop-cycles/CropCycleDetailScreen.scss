@@ -1,0 +1,556 @@
+// Bhoomi — CropCycleDetailScreen Styles (§12.3 Modern Agriculture Skeuomorphism)
+@use "../../design-system/tokens" as *;
+
+// ── Screen wrapper ────────────────────────────────────────────────────────────
+.ccd-screen {
+  display: flex;
+  flex-direction: column;
+  gap: $space-xl;
+  padding: $space-xl;
+  max-width: 900px;
+  margin: 0 auto;
+  min-height: 100%;
+
+  @media (max-width: 768px) {
+    padding: $space-lg $space-md;
+    gap: $space-lg;
+  }
+}
+
+// ── Breadcrumb ────────────────────────────────────────────────────────────────
+.ccd-screen__breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: $space-xs;
+  flex-wrap: wrap;
+}
+
+.ccd-screen__back-link {
+  color: $color-primary-green;
+  text-decoration: none;
+  font-size: 0.875rem;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+
+  &:hover { text-decoration: underline; }
+}
+
+.ccd-screen__breadcrumb-sep {
+  color: $color-border-dark;
+  font-size: 0.875rem;
+}
+
+.ccd-screen__breadcrumb-current {
+  font-size: 0.875rem;
+  color: $color-muted-text;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 200px;
+}
+
+// ── Skeleton ──────────────────────────────────────────────────────────────────
+.ccd-screen__skeleton-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: $space-lg;
+}
+
+.ccd-screen__skeleton {
+  border-radius: $radius-xl;
+  background: linear-gradient(90deg, #E8F0E3 0%, #F0F5EC 50%, #E8F0E3 100%);
+  background-size: 200% 100%;
+  animation: ccd-shimmer 1.4s ease-in-out infinite;
+
+  &--header { height: 140px; }
+  &--body   { height: 200px; }
+  &--list   { height: 160px; }
+}
+
+@keyframes ccd-shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+// ── Header ────────────────────────────────────────────────────────────────────
+.ccd-screen__header {
+  display: flex;
+  align-items: flex-start;
+  gap: $space-lg;
+  background: linear-gradient(135deg, $color-pale-green 0%, #FAF6EE 100%);
+  border: 1.5px solid $color-border;
+  border-radius: $radius-xl;
+  padding: $space-xl;
+  box-shadow: $shadow-md;
+  flex-wrap: wrap;
+
+  @media (max-width: 480px) {
+    padding: $space-lg;
+    gap: $space-md;
+  }
+}
+
+.ccd-screen__crop-icon {
+  font-size: 3rem;
+  width: 72px;
+  height: 72px;
+  background: $color-surface;
+  border: 1.5px solid $color-border;
+  border-radius: $radius-xl;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-shadow: $shadow-sm;
+
+  @media (max-width: 480px) {
+    font-size: 2rem;
+    width: 56px;
+    height: 56px;
+  }
+}
+
+.ccd-screen__header-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: $space-xs;
+}
+
+.ccd-screen__crop-name {
+  font-family: $font-heading;
+  font-size: 1.875rem;
+  font-weight: 800;
+  color: $color-main-text;
+  margin: 0;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+
+  @media (max-width: 480px) { font-size: 1.4rem; }
+}
+
+.ccd-screen__plot-ref {
+  font-size: 0.875rem;
+  color: $color-muted-text;
+  margin: 0;
+}
+
+.ccd-screen__category-tag {
+  display: inline-block;
+  background: $color-surface;
+  border: 1px solid $color-border;
+  border-radius: $radius-full;
+  padding: 2px $space-sm;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: $color-primary-green;
+  align-self: flex-start;
+}
+
+.ccd-screen__status-pill {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: $space-xs $space-md;
+  border-radius: $radius-full;
+  font-size: 0.875rem;
+  font-weight: 700;
+  border: 1.5px solid;
+
+  &--active {
+    background: $color-success-bg;
+    color: $color-success;
+    border-color: rgba(47, 93, 58, 0.3);
+  }
+
+  &--harvested {
+    background: $color-warning-bg;
+    color: $color-warning;
+    border-color: rgba(138, 90, 0, 0.3);
+  }
+
+  &--failed {
+    background: $color-error-bg;
+    color: $color-error;
+    border-color: rgba(180, 35, 24, 0.3);
+  }
+}
+
+// ── Info grid ─────────────────────────────────────────────────────────────────
+.ccd-screen__info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: $space-md;
+}
+
+.ccd-screen__info-card {
+  background: $color-surface;
+  border: 1.5px solid $color-border;
+  border-radius: $radius-xl;
+  padding: $space-lg;
+  box-shadow: $shadow-sm;
+  display: flex;
+  flex-direction: column;
+  gap: $space-xs;
+}
+
+.ccd-screen__info-label {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: $color-muted-text;
+}
+
+.ccd-screen__info-value {
+  font-size: 1rem;
+  font-weight: 700;
+  color: $color-main-text;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: $space-sm;
+  flex-wrap: wrap;
+}
+
+.ccd-screen__edit-link {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: $color-primary-green;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  font-family: $font-sans;
+  padding: 0;
+  text-decoration: underline;
+
+  &:hover { color: $color-primary-dark; }
+}
+
+// ── Harvest date edit ─────────────────────────────────────────────────────────
+.ccd-screen__harvest-edit {
+  background: $color-pale-green;
+  border: 1.5px solid $color-border;
+  border-radius: $radius-xl;
+  padding: $space-xl;
+  display: flex;
+  flex-direction: column;
+  gap: $space-md;
+}
+
+.ccd-screen__harvest-actions {
+  display: flex;
+  gap: $space-sm;
+}
+
+// ── Section titles ────────────────────────────────────────────────────────────
+.ccd-screen__section-title {
+  font-family: $font-heading;
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: $color-main-text;
+  margin: 0 0 $space-md;
+  display: flex;
+  align-items: center;
+  gap: $space-sm;
+}
+
+.ccd-screen__activity-count {
+  background: $color-pale-green;
+  border: 1px solid $color-border;
+  border-radius: $radius-full;
+  padding: 2px 8px;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: $color-primary-green;
+}
+
+// ── Description ──────────────────────────────────────────────────────────────
+.ccd-screen__description {
+  background: $color-surface;
+  border: 1.5px solid $color-border;
+  border-radius: $radius-xl;
+  padding: $space-xl;
+  box-shadow: $shadow-sm;
+}
+
+.ccd-screen__description-text {
+  font-size: 0.9375rem;
+  color: $color-muted-text;
+  line-height: 1.65;
+  margin: 0;
+}
+
+// ── Status controls ──────────────────────────────────────────────────────────
+.ccd-screen__status-controls {
+  background: $color-surface;
+  border: 1.5px solid $color-border;
+  border-radius: $radius-xl;
+  padding: $space-xl;
+  box-shadow: $shadow-sm;
+}
+
+.ccd-screen__status-error {
+  color: $color-error;
+  font-size: 0.875rem;
+  margin: 0 0 $space-md;
+}
+
+.ccd-screen__status-btn-row {
+  display: flex;
+  gap: $space-md;
+  flex-wrap: wrap;
+}
+
+.ccd-screen__status-btn {
+  padding: $space-sm $space-xl;
+  border-radius: $radius-xl;
+  border: 1.5px solid transparent;
+  font-family: $font-sans;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: $space-xs;
+  transition: all 0.15s;
+
+  &:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  &--harvest {
+    background: $color-warning-bg;
+    border-color: rgba(138, 90, 0, 0.3);
+    color: $color-warning;
+
+    &:hover:not(:disabled) {
+      background: $color-warning;
+      color: #fff;
+      border-color: $color-warning;
+    }
+  }
+
+  &--failed {
+    background: $color-error-bg;
+    border-color: rgba(180, 35, 24, 0.25);
+    color: $color-error;
+
+    &:hover:not(:disabled) {
+      background: $color-error;
+      color: #fff;
+      border-color: $color-error;
+    }
+  }
+}
+
+// ── Activities ────────────────────────────────────────────────────────────────
+.ccd-screen__activities {
+  background: $color-surface;
+  border: 1.5px solid $color-border;
+  border-radius: $radius-xl;
+  padding: $space-xl;
+  box-shadow: $shadow-sm;
+}
+
+.ccd-screen__activity-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: $space-sm;
+}
+
+.ccd-screen__activity-row {
+  display: flex;
+  align-items: flex-start;
+  gap: $space-md;
+  padding: $space-md;
+  background: #FAF9F5;
+  border: 1px solid rgba(216, 223, 210, 0.7);
+  border-radius: $radius-lg;
+  transition: background 0.12s;
+
+  &:hover { background: $color-pale-green; }
+}
+
+.ccd-screen__activity-icon {
+  font-size: 1.25rem;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.ccd-screen__activity-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.ccd-screen__activity-type {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: $color-main-text;
+}
+
+.ccd-screen__activity-notes {
+  font-size: 0.8125rem;
+  color: $color-muted-text;
+}
+
+.ccd-screen__activity-date {
+  font-size: 0.8125rem;
+  color: $color-muted-text;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+// ── Danger zone ───────────────────────────────────────────────────────────────
+.ccd-screen__danger-zone {
+  border: 1.5px solid rgba(180, 35, 24, 0.25);
+  border-radius: $radius-xl;
+  padding: $space-xl;
+  background: rgba(254, 228, 226, 0.3);
+  display: flex;
+  flex-direction: column;
+  gap: $space-sm;
+}
+
+.ccd-screen__danger-title {
+  font-family: $font-heading;
+  font-size: 1rem;
+  font-weight: 700;
+  color: $color-error;
+  margin: 0;
+}
+
+.ccd-screen__danger-desc {
+  font-size: 0.875rem;
+  color: $color-muted-text;
+  margin: 0;
+}
+
+.ccd-screen__delete-btn {
+  align-self: flex-start;
+  padding: 8px $space-lg;
+  background: transparent;
+  border: 1.5px solid $color-error;
+  border-radius: $radius-md;
+  color: $color-error;
+  font-family: $font-sans;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+
+  &:hover { background: $color-error; color: #fff; }
+}
+
+// ── Error / Unavailable banners ───────────────────────────────────────────────
+.ccd-screen__banner {
+  display: flex;
+  align-items: center;
+  gap: $space-md;
+  border-radius: $radius-xl;
+  padding: $space-lg $space-xl;
+  flex-wrap: wrap;
+
+  font-size: 1.5rem; // icon
+
+  &--error {
+    background: $color-error-bg;
+    border: 1px solid rgba(180, 35, 24, 0.2);
+  }
+
+  &--warn {
+    background: $color-warning-bg;
+    border: 1px solid rgba(138, 90, 0, 0.2);
+  }
+}
+
+.ccd-screen__banner-title {
+  font-weight: 700;
+  color: $color-main-text;
+  margin: 0 0 2px;
+}
+
+.ccd-screen__banner-msg {
+  color: $color-muted-text;
+  font-size: 0.875rem;
+  margin: 0;
+}
+
+.ccd-screen__retry-btn {
+  margin-left: auto;
+  padding: 8px $space-lg;
+  border-radius: $radius-md;
+  border: 1.5px solid $color-error;
+  background: transparent;
+  color: $color-error;
+  font-family: $font-sans;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+
+  &:hover { background: $color-error; color: #fff; }
+}
+
+// Shared button styles (if not in global.scss)
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: $space-xs;
+  padding: 8px $space-xl;
+  border-radius: $radius-xl;
+  border: 1.5px solid transparent;
+  font-family: $font-sans;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+
+  &:disabled { opacity: 0.55; cursor: not-allowed; }
+
+  &--primary {
+    background: $color-primary-green;
+    color: #fff;
+    border-color: $color-primary-green;
+    box-shadow: $shadow-tactile-btn;
+
+    &:hover:not(:disabled) { background: $color-primary-dark; border-color: $color-primary-dark; }
+  }
+
+  &--ghost {
+    background: transparent;
+    color: $color-main-text;
+    border-color: $color-border;
+
+    &:hover:not(:disabled) { background: $color-pale-green; border-color: $color-border-dark; }
+  }
+}
+
+// Global input-field class (relies on upstream global.scss; fallback included)
+.input-field {
+  width: 100%;
+  padding: 10px $space-md;
+  border: 1.5px solid $color-border;
+  border-radius: $radius-xl;
+  font-family: $font-sans;
+  font-size: 0.9375rem;
+  color: $color-main-text;
+  background: $color-surface;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  box-sizing: border-box;
+
+  &:focus {
+    outline: none;
+    border-color: $color-primary-green;
+    box-shadow: $focus-ring;
+  }
+
+  &::placeholder { color: $color-muted-text; }
+}

@@ -1,0 +1,164 @@
+/**
+ * Bhoomi FarmCard Component Styles (§12.1, §12.2, §12.3)
+ *
+ * Modern Agriculture Skeuomorphism:
+ * - Cream or pale-green surface
+ * - Soft tactile shadow and organic border
+ * - Header with farm icon and plot count badge
+ * - Restrained typography and high-contrast metadata
+ */
+
+@use '../../tokens' as *;
+
+.farm-card {
+  background-color: $color-surface;
+  border: 1px solid $color-border;
+  border-radius: $radius-xl;
+  box-shadow: $shadow-md;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  transition: all 0.2s ease;
+  position: relative;
+
+  &:hover {
+    box-shadow: $shadow-lg;
+    border-color: $color-border-dark;
+    transform: translateY(-2px);
+  }
+
+  &:focus-within {
+    border-color: $color-primary-green;
+  }
+
+  &__banner {
+    background: linear-gradient(135deg, $color-pale-green 0%, #FAF6EE 100%);
+    padding: $space-lg;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: $space-md;
+    border-bottom: 1px solid rgba(216, 223, 210, 0.6);
+  }
+
+  &__icon-box {
+    width: 48px;
+    height: 48px;
+    border-radius: $radius-lg;
+    background-color: #ffffff;
+    border: 1px solid $color-border;
+    color: $color-primary-green;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: $shadow-sm;
+    flex-shrink: 0;
+  }
+
+  &__header-content {
+    flex: 1;
+    min-width: 0;
+  }
+
+  &__title {
+    font-family: $font-heading;
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: $color-main-text;
+    letter-spacing: -0.01em;
+    margin: 0 0 $space-xs 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+
+    a {
+      color: inherit;
+      text-decoration: none;
+
+      &:hover {
+        color: $color-primary-green;
+        text-decoration: underline;
+      }
+    }
+  }
+
+  &__meta {
+    font-size: 0.8125rem;
+    color: $color-muted-text;
+    display: flex;
+    align-items: center;
+    gap: $space-xs;
+  }
+
+  &__badge {
+    background-color: #ffffff;
+    border: 1px solid $color-border;
+    border-radius: $radius-full;
+    padding: 3px 10px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: $color-primary-green;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    flex-shrink: 0;
+  }
+
+  &__body {
+    padding: $space-lg;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: $space-sm;
+  }
+
+  &__info-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: $space-sm;
+    margin-bottom: $space-xs;
+  }
+
+  &__info-item {
+    background-color: #FAF9F5;
+    border: 1px solid rgba(216, 223, 210, 0.7);
+    border-radius: $radius-md;
+    padding: $space-xs $space-sm;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+
+    &-label {
+      font-size: 0.6875rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: $color-muted-text;
+      font-weight: 600;
+    }
+
+    &-value {
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: $color-main-text;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+  }
+
+  &__actions {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: $space-xs;
+    padding: $space-md $space-lg;
+    background-color: #FAF9F6;
+    border-top: 1px solid $color-border;
+
+    .btn-group {
+      display: flex;
+      align-items: center;
+      gap: $space-xs;
+    }
+  }
+}

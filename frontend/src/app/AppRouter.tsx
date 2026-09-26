@@ -9,6 +9,11 @@ import { LoginScreen } from "../screens/auth/LoginScreen";
 import { RegisterScreen } from "../screens/auth/RegisterScreen";
 import { ProfileScreen } from "../screens/auth/ProfileScreen";
 import { VerificationScreen } from "../screens/verification/VerificationScreen";
+import { MyFarmsScreen } from "../screens/farms/MyFarmsScreen";
+import { FarmDetailsScreen } from "../screens/farms/FarmDetailsScreen";
+import { PlotDetailsScreen } from "../screens/farms/PlotDetailsScreen";
+import { CropCyclesScreen } from "../screens/crop-cycles/CropCyclesScreen";
+import { CropCycleDetailScreen } from "../screens/crop-cycles/CropCycleDetailScreen";
 import { StyleGuidePage } from "../screens/style-guide/StyleGuidePage";
 
 // ─── Guards ───────────────────────────────────────────────────────────────────
@@ -117,10 +122,11 @@ export function AppRouter() {
         <Route element={<ProtectedRoute />}>
           <Route path="/profile" element={<ProfileScreen />} />
           <Route path="/dashboard" element={<PlaceholderPage title="Dashboard — Prompt 16" />} />
-          <Route path="/farms" element={<PlaceholderPage title="My Farms — Prompt 12" />} />
-          <Route path="/farms/:farmId" element={<PlaceholderPage title="Farm Detail — Prompt 12" />} />
-          <Route path="/farms/:farmId/plots/:plotId" element={<PlaceholderPage title="Plot Detail — Prompt 12" />} />
-          <Route path="/crop-cycles" element={<PlaceholderPage title="Crop Cycles — Prompt 13" />} />
+          <Route path="/farms" element={<MyFarmsScreen />} />
+          <Route path="/farms/:farmId" element={<FarmDetailsScreen />} />
+          <Route path="/farms/:farmId/plots/:plotId" element={<PlotDetailsScreen />} />
+          <Route path="/crop-cycles" element={<CropCyclesScreen />} />
+          <Route path="/crop-cycles/:cycleId" element={<CropCycleDetailScreen />} />
           <Route path="/activities" element={<PlaceholderPage title="Activities — Prompt 14" />} />
           <Route path="/weather" element={<PlaceholderPage title="Weather — Prompt 15" />} />
           <Route path="/verification" element={<VerificationScreen />} />

@@ -1,0 +1,481 @@
+/**
+ * Bhoomi Farm & Plot Screens Styles (§12.1, §12.2, §12.4)
+ *
+ * Modern Agriculture Skeuomorphism:
+ * - Warm cream background ($color-warm-cream)
+ * - Forest-green header accents and tactile action buttons
+ * - Restrained tactile cards and high-contrast forms
+ * - Comprehensive implementation of all 7 UI states
+ */
+
+@use '../../design-system/tokens' as *;
+
+.farms-page {
+  min-height: calc(100vh - 64px);
+  background-color: $color-warm-cream;
+  padding: $space-xl $space-lg;
+
+  @media (max-width: 768px) {
+    padding: $space-md;
+    padding-bottom: 80px; // space for bottom nav
+  }
+
+  &__container {
+    max-width: 1140px;
+    margin: 0 auto;
+  }
+}
+
+// ─── Breadcrumb Navigation ──────────────────────────────────────────────────
+
+.farms-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: $space-xs;
+  font-size: 0.875rem;
+  color: $color-muted-text;
+  margin-bottom: $space-lg;
+
+  a {
+    color: $color-primary-green;
+    text-decoration: none;
+    font-weight: 500;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+
+  &__separator {
+    color: $color-border-dark;
+  }
+
+  &__current {
+    font-weight: 600;
+    color: $color-main-text;
+  }
+}
+
+// ─── Header & Top Actions ───────────────────────────────────────────────────
+
+.farms-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: $space-md;
+  margin-bottom: $space-xl;
+  flex-wrap: wrap;
+
+  &__titles {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  &__title {
+    font-family: $font-heading;
+    font-size: 1.875rem;
+    font-weight: 700;
+    color: $color-main-text;
+    letter-spacing: -0.02em;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: $space-sm;
+
+    @media (max-width: 480px) {
+      font-size: 1.5rem;
+    }
+  }
+
+  &__subtitle {
+    font-size: 0.9375rem;
+    color: $color-muted-text;
+    margin: 0;
+  }
+
+  &__actions {
+    display: flex;
+    align-items: center;
+    gap: $space-sm;
+  }
+}
+
+// ─── Summary Metrics Bar ────────────────────────────────────────────────────
+
+.farms-summary-bar {
+  background-color: #ffffff;
+  border: 1px solid $color-border;
+  border-radius: $radius-xl;
+  padding: $space-md $space-xl;
+  margin-bottom: $space-xl;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-shadow: $shadow-sm;
+  gap: $space-md;
+  overflow-x: auto;
+
+  @media (max-width: 640px) {
+    padding: $space-md;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: $space-md;
+  }
+
+  &__item {
+    display: flex;
+    align-items: center;
+    gap: $space-md;
+  }
+
+  &__icon {
+    width: 44px;
+    height: 44px;
+    border-radius: $radius-lg;
+    background-color: $color-pale-green;
+    color: $color-primary-green;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  &__label {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: $color-muted-text;
+    font-weight: 600;
+  }
+
+  &__value {
+    font-family: $font-heading;
+    font-size: 1.375rem;
+    font-weight: 700;
+    color: $color-main-text;
+    line-height: 1.2;
+  }
+
+  &__divider {
+    width: 1px;
+    height: 36px;
+    background-color: $color-border;
+
+    @media (max-width: 640px) {
+      display: none;
+    }
+  }
+}
+
+// ─── Farm Details Hero Card ─────────────────────────────────────────────────
+
+.farm-details-hero {
+  background: #ffffff;
+  border: 1px solid $color-border;
+  border-radius: $radius-xl;
+  box-shadow: $shadow-md;
+  padding: $space-xl;
+  margin-bottom: $space-2xl;
+  display: flex;
+  flex-direction: column;
+  gap: $space-lg;
+
+  &__header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: $space-md;
+    flex-wrap: wrap;
+  }
+
+  &__title-box {
+    display: flex;
+    align-items: center;
+    gap: $space-md;
+  }
+
+  &__icon {
+    width: 56px;
+    height: 56px;
+    border-radius: $radius-xl;
+    background-color: $color-pale-green;
+    color: $color-primary-green;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: $shadow-sm;
+    flex-shrink: 0;
+  }
+
+  &__title {
+    font-family: $font-heading;
+    font-size: 1.625rem;
+    font-weight: 700;
+    color: $color-main-text;
+    margin: 0 0 4px 0;
+  }
+
+  &__subtitle {
+    font-size: 0.875rem;
+    color: $color-muted-text;
+    display: flex;
+    align-items: center;
+    gap: $space-xs;
+  }
+
+  &__attributes-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: $space-md;
+    background-color: #FAF9F5;
+    border: 1px solid rgba(216, 223, 210, 0.7);
+    border-radius: $radius-lg;
+    padding: $space-md $space-lg;
+
+    @media (max-width: 768px) {
+      grid-template-columns: repeat(2, 1fr);
+    }
+    @media (max-width: 480px) {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  &__attr {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+
+    &-label {
+      font-size: 0.6875rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: $color-muted-text;
+      font-weight: 600;
+    }
+
+    &-value {
+      font-size: 0.9375rem;
+      font-weight: 600;
+      color: $color-main-text;
+    }
+  }
+}
+
+// ─── Grid of Cards ──────────────────────────────────────────────────────────
+
+.farms-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: $space-xl;
+  margin-bottom: $space-2xl;
+
+  @media (max-width: 480px) {
+    grid-template-columns: 1fr;
+    gap: $space-md;
+  }
+}
+
+// ─── Modal Form Drawer / Dialog ─────────────────────────────────────────────
+
+.farm-modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(18, 38, 24, 0.45);
+  backdrop-filter: blur(2px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: $space-md;
+}
+
+.farm-modal {
+  background: #ffffff;
+  border: 1px solid $color-border;
+  border-radius: $radius-xl;
+  box-shadow: $shadow-lg;
+  width: 100%;
+  max-width: 520px;
+  overflow: hidden;
+  animation: modalIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+
+  &__header {
+    background-color: #FAF8F2;
+    padding: $space-lg;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid $color-border;
+  }
+
+  &__title {
+    font-family: $font-heading;
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: $color-main-text;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: $space-sm;
+  }
+
+  &__close-btn {
+    background: none;
+    border: none;
+    color: $color-muted-text;
+    cursor: pointer;
+    padding: 4px;
+    border-radius: $radius-sm;
+
+    &:hover {
+      background-color: rgba(0, 0, 0, 0.05);
+      color: $color-main-text;
+    }
+  }
+
+  &__body {
+    padding: $space-xl;
+    display: flex;
+    flex-direction: column;
+    gap: $space-md;
+  }
+
+  &__row {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: $space-md;
+
+    @media (max-width: 480px) {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  &__footer {
+    padding: $space-md $space-xl;
+    background-color: #FAF9F6;
+    border-top: 1px solid $color-border;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: $space-sm;
+  }
+}
+
+@keyframes modalIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+// ─── Permission Denied State Card (§12.4 State 6) ───────────────────────────
+
+.farm-permission-card {
+  background: #ffffff;
+  border: 1px solid $color-border;
+  border-radius: $radius-xl;
+  box-shadow: $shadow-md;
+  padding: $space-2xl;
+  text-align: center;
+  max-width: 600px;
+  margin: $space-2xl auto;
+
+  &__icon {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    background-color: #FEF2F2;
+    color: #DC2626;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto $space-lg;
+  }
+
+  &__title {
+    font-family: $font-heading;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: $color-main-text;
+    margin-bottom: $space-xs;
+  }
+
+  &__desc {
+    font-size: 0.9375rem;
+    color: $color-muted-text;
+    line-height: 1.5;
+    margin-bottom: $space-xl;
+  }
+
+  &__actions {
+    display: flex;
+    justify-content: center;
+    gap: $space-md;
+  }
+}
+
+// ─── Alerts & Skeletons ─────────────────────────────────────────────────────
+
+.farm-alert {
+  padding: $space-md $space-lg;
+  border-radius: $radius-lg;
+  margin-bottom: $space-xl;
+  display: flex;
+  align-items: flex-start;
+  gap: $space-md;
+  font-size: 0.875rem;
+  line-height: 1.5;
+
+  &--error {
+    background-color: #FEF2F2;
+    border: 1px solid rgba(220, 38, 38, 0.3);
+    color: #991B1B;
+  }
+
+  &--warning {
+    background-color: #FFFBEB;
+    border: 1px solid rgba(217, 119, 6, 0.3);
+    color: #92400E;
+  }
+
+  &__content {
+    flex: 1;
+
+    strong {
+      display: block;
+      font-weight: 600;
+      margin-bottom: 2px;
+    }
+  }
+
+  &__retry-btn {
+    align-self: center;
+  }
+}
+
+.farm-skeleton-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: $space-xl;
+
+  &__card {
+    height: 220px;
+    background: linear-gradient(90deg, #EBE6D8 25%, #F4EFE3 50%, #EBE6D8 75%);
+    background-size: 200% 100%;
+    animation: farmShimmer 1.5s infinite;
+    border-radius: $radius-xl;
+  }
+}
+
+@keyframes farmShimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
