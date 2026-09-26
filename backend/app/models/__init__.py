@@ -10,6 +10,7 @@ from .farm import Farm, Plot, CropCatalog, CropCycle, FarmActivity
 from .weather import WeatherAdvisory
 from .auth import RefreshToken
 from .audit import AuditLog
+from .notification import Notification
 
 __all__ = [
     "UUIDPrimaryKeyMixin",
@@ -26,4 +27,5 @@ __all__ = [
     "WeatherAdvisory",
     "RefreshToken",
     "AuditLog",
+    "Notification",
 ]

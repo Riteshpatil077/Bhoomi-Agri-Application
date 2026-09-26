@@ -34,11 +34,15 @@ def make_celery(app: Flask) -> Celery:
             "accept_content": ["json"],
             "timezone": "UTC",
             "enable_utc": True,
-            # Beat schedule (§5: automatic retention document purge)
+            # Beat schedule (§5 & §7)
             "beat_schedule": {
                 "purge-expired-verification-docs-hourly": {
                     "task": "app.tasks.verification.purge_expired_verification_docs",
                     "schedule": 3600.0,  # Run every hour
+                },
+                "check-due-farm-activities-daily": {
+                    "task": "app.tasks.activities.check_due_activities_and_notify",
+                    "schedule": 86400.0,  # Run daily
                 },
             },
         }

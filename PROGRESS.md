@@ -196,12 +196,47 @@ Updated after every completed, verified module per the Prompt 0 working agreemen
 - Frontend build & typecheck: **0 errors**
 
 ### Known deferred items (not bugs)
-- Farm activities and reminders — Prompt 7
 - Verified weather / advisory module — Prompt 8
 
 ---
 
-_Next: Prompt 7 — Farm Activities & Reminders_
+## Prompt 7 — Farm Activities & Reminders ✅
+
+**Completed**: 2026-09-26
+
+### What was built
+- `backend/app/models/notification.py` — `Notification` model with user FK, title, message, notification_type (`activity_reminder`, `weather_alert`, etc.), channel (`in_app`, `sms`, `email`), `is_read`, `read_at`, and `data_json` payload.
+- `backend/app/utils/notifications.py` — `send_notification()` helper dispatching in-app alerts and external delivery channels (SMS/Email).
+- `backend/app/schemas/activity.py` — Marshmallow validation schemas for `CreateActivitySchema`, `UpdateActivitySchema`, and `CompleteActivitySchema`.
+- `backend/app/blueprints/farm_activities/routes.py`:
+  - `GET /api/activities` — Lists activities across all farms/plots/cycles for the authenticated farmer with `is_completed`, `activity_type`, and date range filters.
+  - `GET /api/activities/cycle/<cycle_id>` & `POST /api/activities/cycle/<cycle_id>` — Cycle-scoped activity management with strict owner verification.
+  - `GET /api/activities/<id>`, `PATCH /api/activities/<id>`, `DELETE /api/activities/<id>` — Activity retrieval, update, and deletion; strictly owner-only (cross-user access returns 403 Forbidden).
+  - `POST /api/activities/<id>/complete` — Quick action marking activity completed and recording `completed_date`.
+- `backend/app/blueprints/notifications/routes.py`:
+  - `GET /api/notifications` — Paginated user notifications with `is_read` filtering.
+  - `GET /api/notifications/unread-count` — Count for badge indicators.
+  - `PATCH /api/notifications/<id>/read` — Marks single notification as read.
+  - `PATCH /api/notifications/read-all` — Marks all caller notifications as read.
+  - `DELETE /api/notifications/<id>` — Deletes caller notification.
+- `backend/app/tasks/activities.py`:
+  - `check_due_activities_and_notify` Celery task — Periodic job identifying due (`scheduled_date <= today`) and overdue uncompleted activities on active crop cycles, enqueuing in-app notification reminders for the farmer, with daily duplicate prevention.
+- `backend/app/celery_app.py`:
+  - Added `check-due-farm-activities-daily` to Celery `beat_schedule`.
+- `backend/tests/test_activities.py` — 4 comprehensive test classes validating activity CRUD, completion, strict cross-user 403 isolation, notification workflow, and Celery beat reminder execution with idempotency.
+
+### Tests
+- Backend test suite: **87 passed** (7 scaffolding + 8 models + 13 auth + 28 rbac + 17 verification + 10 farms + 4 activities)
+- Coverage: 86% on backend
+- Frontend build & typecheck: **0 errors**
+
+### Known deferred items (not bugs)
+- Verified weather / advisory module — Prompt 8
+
+---
+
+_Next: Prompt 8 — Verified Weather / Advisory Module_
+
 
 
 
