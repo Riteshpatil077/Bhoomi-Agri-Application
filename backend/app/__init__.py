@@ -51,6 +51,7 @@ def create_app(config_name: str | None = None) -> Flask:
     from .blueprints.crop_cycles import crop_cycles_bp
     from .blueprints.farm_activities import farm_activities_bp
     from .blueprints.notifications import notifications_bp
+    from .blueprints.weather import weather_bp
 
     app.register_blueprint(health_bp)
     app.register_blueprint(auth_bp, url_prefix="/api/auth")
@@ -63,6 +64,7 @@ def create_app(config_name: str | None = None) -> Flask:
     app.register_blueprint(crop_cycles_bp, url_prefix="/api/crop-cycles")
     app.register_blueprint(farm_activities_bp, url_prefix="/api/activities")
     app.register_blueprint(notifications_bp, url_prefix="/api/notifications")
+    app.register_blueprint(weather_bp, url_prefix="/api/weather")
 
     # ------------------------------------------------------------------ #
     # CLI commands                                                         #

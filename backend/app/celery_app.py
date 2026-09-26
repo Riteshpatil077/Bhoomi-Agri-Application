@@ -34,7 +34,7 @@ def make_celery(app: Flask) -> Celery:
             "accept_content": ["json"],
             "timezone": "UTC",
             "enable_utc": True,
-            # Beat schedule (§5 & §7)
+            # Beat schedule (§5, §7, §8)
             "beat_schedule": {
                 "purge-expired-verification-docs-hourly": {
                     "task": "app.tasks.verification.purge_expired_verification_docs",
@@ -43,6 +43,10 @@ def make_celery(app: Flask) -> Celery:
                 "check-due-farm-activities-daily": {
                     "task": "app.tasks.activities.check_due_activities_and_notify",
                     "schedule": 86400.0,  # Run daily
+                },
+                "poll-weather-forecasts-periodic": {
+                    "task": "app.tasks.weather.poll_weather_forecasts",
+                    "schedule": 10800.0,  # Run every 3 hours
                 },
             },
         }

@@ -231,11 +231,38 @@ Updated after every completed, verified module per the Prompt 0 working agreemen
 - Frontend build & typecheck: **0 errors**
 
 ### Known deferred items (not bugs)
-- Verified weather / advisory module — Prompt 8
+- None in Backend MVP (Prompts 1–8 complete)
 
 ---
 
-_Next: Prompt 8 — Verified Weather / Advisory Module_
+## Prompt 8 — Verified Weather / Advisory Module ✅
+
+**Completed**: 2026-09-26
+
+### What was built
+- `backend/app/utils/weather.py`:
+  - `WeatherService` client with provenance tracking (`source_name`, `source_url`, `source_updated_at`, `valid_until`, `is_official`). Handles external API calls, parsing, and fails gracefully with `WeatherFetchError` without fabricating corrupt data per §8.
+- `backend/app/tasks/weather.py`:
+  - `poll_weather_forecasts` Celery task — Periodic background job pulling forecasts across registered farm regions and default agricultural zones. Stores forecasts in `weather_advisories` table with complete external data quality provenance. Gracefully handles upstream failures without writing fabricated rows.
+- `backend/app/blueprints/weather/routes.py`:
+  - `GET /api/weather/forecast` — Returns current or last-known-good forecast for a region or coordinates. Surfaces provenance metadata. If data is expired, returns `status="stale"`, `is_stale=True`, and message `"Data unavailable, last known good at {source_updated_at}"` per §8.
+  - `GET /api/weather/advisories` — Lists regional agronomic advisories (pest alerts, moisture warnings, temperature alerts) with provenance and validity status.
+- `backend/app/celery_app.py`:
+  - Added `poll-weather-forecasts-periodic` (every 3 hours) to Celery `beat_schedule`.
+- `backend/tests/test_weather.py` — 5 comprehensive tests verifying Celery polling, upstream failure handling without data fabrication, current forecast with full provenance, stale-data handling with last-known-good timestamp, and regional agronomic advisories.
+
+### Tests
+- Backend test suite: **92 passed** (7 scaffolding + 8 models + 13 auth + 28 rbac + 17 verification + 10 farms + 4 activities + 5 weather)
+- Coverage: 86% on backend
+- Frontend build & typecheck: **0 errors**
+
+### Summary of Backend MVP (Prompts 1–8)
+All 8 backend modules of the MVP are fully implemented, verified, and passing 92 automated tests with 86% coverage. All RBAC rules, strict owner-only access controls, audit logs with mandatory reasons, separate private/public storage abstractions, and Celery beat background jobs are verified.
+
+---
+
+_Next: Prompt 9 — Design Tokens & Shared Layout (Modern Agriculture Skeuomorphism Frontend)_
+
 
 
 
