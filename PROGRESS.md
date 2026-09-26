@@ -91,4 +91,41 @@ Updated after every completed, verified module per the Prompt 0 working agreemen
 
 ---
 
-_Next: Prompt 4 — RBAC, permission grants, and Super Admin bootstrap_
+## Prompt 4 — RBAC, Permission Grants, and Super Admin Bootstrap ✅
+
+**Completed**: 2026-09-26
+
+### What was built
+- `backend/app/rbac/decorators.py`:
+  - `@platform_role_required(*roles)` — Enforces `current_user.platform_role` membership on every request by querying live DB; returns 401 on missing JWT and 403 on role mismatch per §7.
+  - `@permission_required(permission_key)` — Queries live `admin_permission_grants` table for an active (non-revoked) grant row. Regular users receive 403; Super Admins bypass automatically per §7.
+- `backend/app/blueprints/admin/`:
+  - `GET /api/admin/me/permissions` — Returns caller's active permission grants (`implicit_super_admin: true` for Super Admins).
+  - `GET /api/admin/users` — Paginated user listing filtered by role/type/status, requiring `user_reports` grant.
+  - `GET /api/admin/users/<id>` — User detail view requiring `user_reports` grant.
+  - `PATCH /api/admin/users/<id>/deactivate` & `PATCH /api/admin/users/<id>/activate` — Account lifecycle endpoints with mandatory `reason` logging to `audit_logs`.
+- `backend/app/blueprints/super_admin/`:
+  - `GET /api/super-admin/admins` — Lists all admin/super_admin accounts.
+  - `POST /api/super-admin/admins` — Provisions admin/super_admin accounts; self-promotion prevention built-in.
+  - `PATCH /api/super-admin/admins/<id>/deactivate` & `/activate` — Admin account deactivation/reactivation; self-deactivation protection enforced.
+  - `GET /api/super-admin/admins/<id>/permissions` — Returns grants for an admin.
+  - `POST /api/super-admin/admins/<id>/permissions` — Idempotently grants permission with `AuditLog` row.
+  - `DELETE /api/super-admin/admins/<id>/permissions/<key>` — Revokes permission with `AuditLog` row.
+  - `GET /api/super-admin/audit-logs` — Paginated audit log explorer with filtering.
+- `backend/app/cli/__init__.py`:
+  - `flask create-super-admin` — Idempotent bootstrap CLI command; refuses execution if any Super Admin exists in the database.
+- `backend/tests/test_rbac.py` — 28 comprehensive tests covering role gates, permission gates, admin creation/deactivation, grant/revocation idempotency, self-promotion/self-deactivation protections, audit trails, and CLI idempotency.
+
+### Tests
+- Backend test suite: **56 passed** (7 scaffolding + 8 models + 13 auth + 28 rbac)
+- Coverage: 84% on backend
+- Frontend build & typecheck: **0 errors**
+
+### Known deferred items (not bugs)
+- Farmer verification upload & review endpoints — Prompt 5
+- Farm, plot, crop-cycle CRUD — Prompt 6
+
+---
+
+_Next: Prompt 5 — Farmer Verification Module_
+
