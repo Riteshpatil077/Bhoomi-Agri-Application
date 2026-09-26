@@ -109,29 +109,6 @@ export const SuperAdminScreen: React.FC = () => {
   });
   const auditPerPage = 25;
 
-  // ── State 6: Permission Denied ─────────────────────────────────────────
-  if (!user || user.platform_role !== "super_admin") {
-    return (
-      <AppShell>
-        <div className="super-admin-badge">
-          <ShieldAlert size={16} />
-          Super Admin Control Panel
-        </div>
-        <div className="sa-screen">
-          <div className="sa-screen__alert-box" role="alert">
-            <Lock size={32} />
-            <div>
-              <h3 className="sa-screen__alert-box-title">Permission Denied (HTTP 403)</h3>
-              <p className="sa-screen__alert-box-msg">
-                This panel requires the <code>super_admin</code> platform role.
-                Admin accounts are not permitted to access this interface — the API will reject all requests with HTTP 403.
-              </p>
-            </div>
-          </div>
-        </div>
-      </AppShell>
-    );
-  }
 
   // ── Badge variant helpers ───────────────────────────────────────────────
   const getVerificationBadgeVariant = (status: string): BadgeVariant => {
@@ -353,6 +330,30 @@ export const SuperAdminScreen: React.FC = () => {
   };
 
   const activePermKeys = adminGrants.filter((g) => g.is_active).map((g) => g.permission_key);
+
+  // ── State 6: Permission Denied (§12.4) ─────────────────────────────────
+  if (!user || user.platform_role !== "super_admin") {
+    return (
+      <AppShell>
+        <div className="super-admin-badge">
+          <ShieldAlert size={16} />
+          Super Admin Control Panel
+        </div>
+        <div className="sa-screen">
+          <div className="sa-screen__alert-box" role="alert">
+            <Lock size={32} />
+            <div>
+              <h3 className="sa-screen__alert-box-title">Permission Denied (HTTP 403)</h3>
+              <p className="sa-screen__alert-box-msg">
+                This panel requires the <code>super_admin</code> platform role.
+                Admin accounts are not permitted to access this interface — the API will reject all requests with HTTP 403.
+              </p>
+            </div>
+          </div>
+        </div>
+      </AppShell>
+    );
+  }
 
   return (
     <AppShell>

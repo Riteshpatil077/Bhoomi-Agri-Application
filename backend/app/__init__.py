@@ -7,7 +7,7 @@ from __future__ import annotations
 import logging
 import os
 
-from flask import Flask, jsonify
+from flask import Flask, jsonify, Response
 
 from .config import config_map
 from .extensions import db, jwt, limiter, migrate, cors
@@ -71,6 +71,56 @@ def create_app(config_name: str | None = None) -> Flask:
     # ------------------------------------------------------------------ #
     from .cli import register_commands
     register_commands(app)
+
+    # ------------------------------------------------------------------ #
+    # Security headers (§9)                                                #
+    # Applied to every response. See OWASP Secure Headers Project.         #
+    # ------------------------------------------------------------------ #
+    @app.after_request
+    def set_security_headers(response: Response) -> Response:
+        # Prevent MIME-type sniffing (§9)
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        # Forbid framing by any origin (clickjacking protection) (§9)
+        response.headers["X-Frame-Options"] = "DENY"
+        # Referrer leakage control
+        response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+        # Basic CSP — allow only same origin; tightened per deployment in prod.
+        response.headers["Content-Security-Policy"] = (
+            "default-src 'self'; "
+            "script-src 'self'; "
+            "style-src 'self' 'unsafe-inline'; "
+            "img-src 'self' data: blob:; "
+            "connect-src 'self'; "
+            "frame-ancestors 'none';"
+        )
+        # Permissions policy — disable unnecessary browser APIs
+        response.headers["Permissions-Policy"] = (
+            "camera=(), microphone=(), geolocation=(), payment=()"
+        )
+        # HSTS — only in production; skip if TESTING to avoid breaking test assertions.
+        if not app.config.get("TESTING") and app.config.get("JWT_COOKIE_SECURE"):
+            response.headers["Strict-Transport-Security"] = (
+                "max-age=31536000; includeSubDomains; preload"
+            )
+        return response
+
+    # ------------------------------------------------------------------ #
+    # Sentry observability (§9)                                            #
+    # ------------------------------------------------------------------ #
+    sentry_dsn = app.config.get("SENTRY_DSN", "")
+    if sentry_dsn:
+        import sentry_sdk
+        from sentry_sdk.integrations.flask import FlaskIntegration
+        from sentry_sdk.integrations.sqlalchemy import SqlalchemyIntegration
+        sentry_sdk.init(
+            dsn=sentry_dsn,
+            integrations=[
+                FlaskIntegration(),
+                SqlalchemyIntegration(),
+            ],
+            traces_sample_rate=0.1,  # 10% of requests traced
+            send_default_pii=False,   # Never send PII to Sentry
+        )
 
     # ------------------------------------------------------------------ #
     # Logging                                                              #

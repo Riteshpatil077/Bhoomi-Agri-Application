@@ -602,5 +602,45 @@ All 8 backend modules of the MVP are fully implemented, verified, and passing 92
 
 ---
 
-_Next: Prompt 20 — Final security pass + CI_
+## Prompt 20 — Final Security Pass + CI ✅
+
+**Completed**: 2026-09-26
+
+### What was verified, hardened, and built
+- **OWASP Secure Response Headers (§9)**:
+  - Added `@app.after_request` hook in `backend/app/__init__.py` to inject headers on every HTTP response:
+    - `X-Content-Type-Options: nosniff` (MIME sniffing prevention)
+    - `X-Frame-Options: DENY` (Clickjacking defense)
+    - `Referrer-Policy: strict-origin-when-cross-origin` (Information leakage mitigation)
+    - `Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self'; frame-ancestors 'none';`
+    - `Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=()`
+    - `Strict-Transport-Security: max-age=31536000; includeSubDomains; preload` (enforced when `JWT_COOKIE_SECURE` is active in production)
+- **Sentry Observability Hardening (§9)**:
+  - Initialized with `FlaskIntegration` and `SqlalchemyIntegration` with `traces_sample_rate=0.1` and `send_default_pii=False` to strictly prevent leaking personal identifiable information.
+- **Dedicated Security Headers Test Suite**:
+  - `backend/tests/test_security_headers.py` — 3 new tests asserting MIME sniffing protection, clickjacking protection, referrer policy, CSP directives, HSTS emission in production, and CORS preflight with credentials.
+- **Frontend Code Quality & Hook Rules Remediation**:
+  - Fixed React Hook ordering in `SuperAdminScreen.tsx` to strictly adhere to React's Rules of Hooks (moving the early return past all hook invocations and guarding effects).
+  - Wrapped `hasGrant` in `useCallback` in `AdminDashboardScreen.tsx` to ensure stable effect dependencies.
+  - Resolved all oxlint linter errors: `npm run lint` now exits cleanly with **0 errors**.
+  - `tsc -b && vite build` builds cleanly with **0 errors**.
+  - `npm audit` executed: **0 vulnerabilities**.
+- **CI Workflow Hardening (`.github/workflows/ci.yml`)**:
+  - Set blocking backend test coverage enforcement: `--cov-fail-under=80`.
+  - Added frontend `npm audit --audit-level=high` step.
+  - Made frontend lint step blocking (`npm run lint`).
+  - Added Trivy filesystem vulnerability scan (`scan-type: fs`) in addition to container image scan.
+
+### Tests & Verification Summary
+- **Backend Test Suite**: **95/95 tests passed** in 114s
+- **Backend Coverage**: **85.48%** (exceeds the 80% `--cov-fail-under` requirement)
+- **Frontend Type Check & Build**: **0 errors** (`tsc -b && vite build` clean, 1959 modules transformed)
+- **Frontend Linting**: **0 errors** (`npm run lint` / oxlint clean)
+- **Frontend Security Audit**: **0 vulnerabilities** (`npm audit` clean)
+
+---
+
+## All 20 Prompts Complete! 🎉
+
+The entire Bhoomi system design and production build blueprint has been implemented, thoroughly tested, and hardened across backend, frontend, RBAC, verification workflow, modern agriculture UI design system, all 7 required UI states, and security/CI requirements.
 

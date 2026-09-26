@@ -128,10 +128,13 @@ export const AdminDashboardScreen: React.FC = () => {
     loadPermissions();
   }, [loadPermissions]);
 
-  const hasGrant = (key: string): boolean => {
-    if (isSuperAdmin) return true;
-    return grantedKeys.includes(key);
-  };
+  const hasGrant = useCallback(
+    (key: string): boolean => {
+      if (isSuperAdmin) return true;
+      return grantedKeys.includes(key);
+    },
+    [isSuperAdmin, grantedKeys]
+  );
 
   // ── Load Verification Applications ──────────────────────────────────────
   const loadApplications = useCallback(async () => {
@@ -163,7 +166,7 @@ export const AdminDashboardScreen: React.FC = () => {
     if (activeTab === "verification" && hasGrant("verification_review")) {
       loadApplications();
     }
-  }, [activeTab, loadApplications, grantedKeys, isSuperAdmin]);
+  }, [activeTab, loadApplications, hasGrant]);
 
   // ── Load User Directory ─────────────────────────────────────────────────
   const loadUsers = useCallback(async () => {
@@ -200,7 +203,7 @@ export const AdminDashboardScreen: React.FC = () => {
     if (activeTab === "users" && hasGrant("user_reports")) {
       loadUsers();
     }
-  }, [activeTab, loadUsers, grantedKeys, isSuperAdmin]);
+  }, [activeTab, loadUsers, hasGrant]);
 
   // ── Photo View Request Handler ──────────────────────────────────────────
   const openPhotoModal = (
