@@ -1,0 +1,123 @@
+# Bhoomi — Docker Compose (development)
+# Services: web (Flask/Gunicorn), worker (Celery), beat (Celery Beat),
+#           postgres, redis.
+# For production, use a managed container service + managed DB (§10/§11).
+
+version: "3.9"
+
+services:
+  # ── PostgreSQL ────────────────────────────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    container_name: bhoomi_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: bhoomi
+      POSTGRES_PASSWORD: bhoomi
+      POSTGRES_DB: bhoomi_db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U bhoomi -d bhoomi_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── Redis ─────────────────────────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: bhoomi_redis
+    restart: unless-stopped
+    command: ["redis-server", "--save", "60", "1", "--loglevel", "warning"]
+    volumes:
+      - redis_data:/data
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── Flask Web App ─────────────────────────────────────────────────────────
+  web:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: bhoomi_web
+    restart: unless-stopped
+    environment:
+      FLASK_ENV: development
+      DATABASE_URL: postgresql://bhoomi:bhoomi@postgres:5432/bhoomi_db
+      REDIS_URL: redis://redis:6379/0
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/0
+      RATELIMIT_STORAGE_URL: redis://redis:6379/0
+      # Override secrets via .env file or secrets manager in production — NEVER hardcode
+      SECRET_KEY: dev-secret-key-replace-in-prod
+      JWT_SECRET_KEY: dev-jwt-secret-replace-in-prod
+      CORS_ORIGINS: http://localhost:5173
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./backend:/app  # Mount for hot-reload in development
+    command: >
+      sh -c "flask db upgrade && gunicorn --bind 0.0.0.0:8000 --workers 2 --reload wsgi:application"
+
+  # ── Celery Worker ─────────────────────────────────────────────────────────
+  worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: bhoomi_worker
+    restart: unless-stopped
+    environment:
+      FLASK_ENV: development
+      DATABASE_URL: postgresql://bhoomi:bhoomi@postgres:5432/bhoomi_db
+      REDIS_URL: redis://redis:6379/0
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/0
+      SECRET_KEY: dev-secret-key-replace-in-prod
+      JWT_SECRET_KEY: dev-jwt-secret-replace-in-prod
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./backend:/app
+    command: >
+      celery -A wsgi:celery_app worker --loglevel=info --concurrency=2
+
+  # ── Celery Beat (scheduler) ───────────────────────────────────────────────
+  beat:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: bhoomi_beat
+    restart: unless-stopped
+    environment:
+      FLASK_ENV: development
+      DATABASE_URL: postgresql://bhoomi:bhoomi@postgres:5432/bhoomi_db
+      REDIS_URL: redis://redis:6379/0
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/0
+      SECRET_KEY: dev-secret-key-replace-in-prod
+      JWT_SECRET_KEY: dev-jwt-secret-replace-in-prod
+    depends_on:
+      - redis
+    volumes:
+      - ./backend:/app
+    command: >
+      celery -A wsgi:celery_app beat --loglevel=info --scheduler celery.beat:PersistentScheduler
+
+volumes:
+  postgres_data:
+  redis_data:

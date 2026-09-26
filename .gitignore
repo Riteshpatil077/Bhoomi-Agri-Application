@@ -1,0 +1,61 @@
+# ── Python ───────────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+ENV/
+.env.local
+*.egg-info/
+dist/
+build/
+*.egg
+
+# ── Flask / Alembic ───────────────────────────────────────────────────────────
+instance/
+.flask_env
+
+# ── Environment files — NEVER commit secrets ─────────────────────────────────
+.env
+.env.*
+!.env.example
+backend/.env
+backend/.env.*
+
+# ── Testing / Coverage ────────────────────────────────────────────────────────
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+
+# ── Node / Frontend ───────────────────────────────────────────────────────────
+node_modules/
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+frontend/.env
+frontend/.env.*
+!frontend/.env.example
+
+# ── Docker ────────────────────────────────────────────────────────────────────
+*.log
+
+# ── Editor ────────────────────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# ── Celery ────────────────────────────────────────────────────────────────────
+celerybeat-schedule
+celerybeat.pid
+
+# ── Infrastructure secrets ───────────────────────────────────────────────────
+infra/*.tfvars
+infra/.terraform/
+infra/terraform.tfstate*
