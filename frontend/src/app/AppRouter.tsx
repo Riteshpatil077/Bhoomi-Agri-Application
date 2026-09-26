@@ -8,6 +8,7 @@ import { useAuth } from "../context/AuthContext";
 import { LoginScreen } from "../screens/auth/LoginScreen";
 import { RegisterScreen } from "../screens/auth/RegisterScreen";
 import { ProfileScreen } from "../screens/auth/ProfileScreen";
+import { VerificationScreen } from "../screens/verification/VerificationScreen";
 import { StyleGuidePage } from "../screens/style-guide/StyleGuidePage";
 
 // ─── Guards ───────────────────────────────────────────────────────────────────
@@ -122,7 +123,7 @@ export function AppRouter() {
           <Route path="/crop-cycles" element={<PlaceholderPage title="Crop Cycles — Prompt 13" />} />
           <Route path="/activities" element={<PlaceholderPage title="Activities — Prompt 14" />} />
           <Route path="/weather" element={<PlaceholderPage title="Weather — Prompt 15" />} />
-          <Route path="/verification" element={<PlaceholderPage title="Verification — Prompt 11" />} />
+          <Route path="/verification" element={<VerificationScreen />} />
           {/* Admin routes — Prompt 18 */}
           <Route path="/admin" element={<PlaceholderPage title="Admin Dashboard — Prompt 18" />} />
           <Route path="/admin/*" element={<PlaceholderPage title="Admin — Prompt 18" />} />

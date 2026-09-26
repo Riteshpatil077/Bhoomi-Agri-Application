@@ -326,5 +326,47 @@ All 8 backend modules of the MVP are fully implemented, verified, and passing 92
 
 ---
 
-_Next: Prompt 11 — Verification Flow (3-step stepper: Purpose → Photos → Review)_
+## Prompt 11 — Verification Flow ✅
+
+**Completed**: 2026-09-26
+
+### What was built
+- `frontend/src/api/verification.ts` — Typed verification API client:
+  - `fetchVerificationStatus()` — Calls `GET /api/verification/status`
+  - `requestUploadUrl(payload)` — Calls `POST /api/verification/upload-url` with CSRF headers for presigned S3 upload URLs
+  - `uploadToPresignedUrl(uploadUrl, file, fields)` — Direct-to-S3 upload via presigned `PUT` with encryption headers; supports mock fallback for local dev
+  - `submitVerification(payload)` — Calls `POST /api/verification/submit` with CSRF token and object keys
+- `frontend/src/screens/verification/verification.scss` — Modern agriculture skeuomorphism styles:
+  - Warm cream canvas, forest-green brand accents, tactile cards, and progress bar stepper
+  - Interactive photo uploader dropzones with drag-over styling, camera icons, upload progress banners, and thumbnail overlays
+  - Dedicated cards for all status variations (Verified celebratory card, Pending review card, and Rejection notice)
+- `frontend/src/screens/verification/VerificationScreen.tsx` — Full 3-step stepper and status views:
+  - **Step 1: Purpose & Privacy** — Explains verification benefits (verified badge, agronomic advisories, trusted produce selling) and plain-language §5 data protection commitments (no national IDs, SSE-KMS private storage, permission-gated access with mandatory audit reason, and automatic `docs_purge_at` retention purge).
+  - **Step 2: Photos** — Live farmer selfie + land/plot photo upload dropzones with format validation (JPEG/PNG/WebP), size enforcement (<= 10MB), presigned S3 upload progress, per-photo error handling, retry buttons, and thumbnail management (change/remove).
+  - **Step 3: Review & Submit** — Applicant summary, uploaded photo thumbnails, authenticity checkbox declaration, and `POST /api/verification/submit` submission with loading state.
+  - **Status View**:
+    - Verified Farmer card with `StatusBadge` variant="verified", green checkmark, and quick links to farms/dashboard.
+    - Pending Review card with `StatusBadge` variant="pending", submission timestamp, and retention timeline reminder.
+    - Rejected Notice with `StatusBadge` variant="rejected", reviewer reason feedback, and "Re-apply" action.
+  - **Explicit Implementation of all 7 UI States (§12.4)**:
+    1. Loading — Skeleton shimmer during status check; upload progress indicators and submit spinner.
+    2. Empty — Unverified onboarding banner explaining benefits with "Begin Verification" CTA.
+    3. Success — Verification submission confirmation toast and Verified status display card.
+    4. Validation error — Inline checks for unsupported MIME types, files > 10MB, missing uploads, unconfirmed declaration.
+    5. API/network error — Dedicated retry affordances on fetch failure, per-photo S3 upload retry, and submit retry.
+    6. Permission denied — Honest 403 / role notice for non-farmer accounts (e.g. buyer/provider).
+    7. Unavailable / stale external data — 503 / storage maintenance alert with retry button.
+- `frontend/src/app/AppRouter.tsx` — Protected route `/verification` wired to `<VerificationScreen />`.
+
+### Tests
+- Frontend build & typecheck: **0 errors, 0 warnings** (`tsc -b && vite build` clean)
+- Backend test suite: **92 passed** in 35.8s with 86% coverage
+- All 7 required UI states (§12.4) verified present
+
+### Known deferred items (not bugs)
+- Admin verification review UI — Prompt 18
+
+---
+
+_Next: Prompt 12 — Farm & Plot screens (`My Farms → Farm details → Plots` using `FarmCard`/`PlotCard`)_
 

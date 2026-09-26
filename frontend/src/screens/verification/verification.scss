@@ -1,0 +1,832 @@
+/**
+ * Bhoomi Farmer Verification Styles (§12.1, §12.2, §5)
+ *
+ * Modern Agriculture Skeuomorphism:
+ * - Warm cream canvas ($color-warm-cream)
+ * - Forest-green brand accents and primary actions ($color-primary-green)
+ * - Restrained tactile cards with soft borders and subtle elevation
+ * - Flat, high-contrast preview frames and dropzones (no texture behind user data)
+ * - Explicit 7-state visual language (Loading, Empty, Success, Validation, API Error, Perm Denied, Unavailable)
+ */
+
+@use 'sass:color';
+@use '../../design-system/tokens' as *;
+
+$color-text-dark: $color-main-text;
+$color-text-muted: $color-muted-text;
+$radius-2xl: 32px;
+
+.verification-page {
+  min-height: calc(100vh - 64px);
+  background-color: $color-warm-cream;
+  padding: $space-xl $space-lg;
+
+  @media (max-width: 768px) {
+    padding: $space-md;
+    padding-bottom: 80px; // account for mobile bottom nav
+  }
+
+  &__container {
+    max-width: 840px;
+    margin: 0 auto;
+  }
+}
+
+// ─── Header & Description ───────────────────────────────────────────────────
+
+.verification-header {
+  margin-bottom: $space-xl;
+  text-align: center;
+
+  &__title {
+    font-family: $font-heading;
+    font-size: 1.875rem;
+    font-weight: 700;
+    color: $color-text-dark;
+    letter-spacing: -0.02em;
+    margin-bottom: $space-xs;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: $space-sm;
+
+    @media (max-width: 480px) {
+      font-size: 1.5rem;
+    }
+  }
+
+  &__icon {
+    color: $color-primary-green;
+  }
+
+  &__subtitle {
+    font-size: 1rem;
+    color: $color-text-muted;
+    max-width: 600px;
+    margin: 0 auto;
+    line-height: 1.5;
+  }
+}
+
+// ─── Stepper Progress Bar (§12.2) ───────────────────────────────────────────
+
+.verification-stepper {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: $space-2xl;
+  position: relative;
+  background: #ffffff;
+  border: 1px solid $color-border;
+  border-radius: $radius-xl;
+  padding: $space-md $space-xl;
+  box-shadow: $shadow-sm;
+
+  @media (max-width: 640px) {
+    padding: $space-md;
+    gap: $space-xs;
+  }
+
+  &__step {
+    display: flex;
+    align-items: center;
+    gap: $space-sm;
+    background: none;
+    border: none;
+    padding: $space-xs $space-sm;
+    cursor: default;
+    color: $color-text-muted;
+    font-family: $font-sans;
+    font-size: 0.9375rem;
+    font-weight: 500;
+    transition: all 0.2s ease;
+
+    @media (max-width: 640px) {
+      font-size: 0.75rem;
+      padding: 2px 4px;
+    }
+
+    &--active {
+      color: $color-primary-green;
+      font-weight: 600;
+
+      .verification-stepper__circle {
+        background-color: $color-primary-green;
+        color: #ffffff;
+        border-color: $color-primary-green;
+        box-shadow: 0 0 0 3px rgba(47, 93, 58, 0.2);
+      }
+    }
+
+    &--completed {
+      color: $color-primary-green;
+
+      .verification-stepper__circle {
+        background-color: $color-primary-green;
+        color: #ffffff;
+        border-color: $color-primary-green;
+      }
+    }
+  }
+
+  &__circle {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: 2px solid $color-border;
+    background-color: #ffffff;
+    color: $color-text-muted;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.875rem;
+    font-weight: 700;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+
+    @media (max-width: 640px) {
+      width: 26px;
+      height: 26px;
+      font-size: 0.75rem;
+    }
+  }
+
+  &__label {
+    @media (max-width: 480px) {
+      display: none; // hide label on narrow mobile, keep circle
+    }
+  }
+
+  &__divider {
+    flex: 1;
+    height: 2px;
+    background-color: $color-border;
+    margin: 0 $space-sm;
+    transition: background-color 0.2s ease;
+
+    &--completed {
+      background-color: $color-primary-green;
+    }
+  }
+}
+
+// ─── Step Cards ─────────────────────────────────────────────────────────────
+
+.verification-card {
+  background: #ffffff;
+  border: 1px solid $color-border;
+  border-radius: $radius-xl;
+  box-shadow: $shadow-md;
+  overflow: hidden;
+  margin-bottom: $space-xl;
+
+  &__body {
+    padding: $space-2xl;
+
+    @media (max-width: 640px) {
+      padding: $space-lg;
+    }
+  }
+
+  &__actions {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: $space-md;
+    padding: $space-lg $space-2xl;
+    background-color: #FAFAF7;
+    border-top: 1px solid $color-border;
+
+    @media (max-width: 640px) {
+      padding: $space-md $space-lg;
+      flex-direction: column-reverse;
+      width: 100%;
+
+      .btn {
+        width: 100%;
+        justify-content: center;
+      }
+    }
+  }
+}
+
+// ─── Step 1: Purpose & Privacy (§5, §12.2) ──────────────────────────────────
+
+.verification-purpose {
+  &__hero {
+    display: flex;
+    gap: $space-xl;
+    align-items: center;
+    margin-bottom: $space-2xl;
+
+    @media (max-width: 640px) {
+      flex-direction: column;
+      text-align: center;
+      gap: $space-md;
+    }
+  }
+
+  &__illustration {
+    width: 96px;
+    height: 96px;
+    border-radius: $radius-2xl;
+    background: rgba(47, 93, 58, 0.08);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: $color-primary-green;
+    flex-shrink: 0;
+
+    @media (max-width: 640px) {
+      margin: 0 auto;
+    }
+  }
+
+  &__intro-title {
+    font-family: $font-heading;
+    font-size: 1.375rem;
+    font-weight: 700;
+    color: $color-text-dark;
+    margin-bottom: $space-xs;
+  }
+
+  &__intro-desc {
+    color: $color-text-muted;
+    font-size: 0.9375rem;
+    line-height: 1.5;
+  }
+
+  &__benefits-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: $space-md;
+    margin-bottom: $space-2xl;
+
+    @media (max-width: 640px) {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  &__benefit-item {
+    background: #FAF9F5;
+    border: 1px solid rgba(220, 215, 201, 0.7);
+    border-radius: $radius-lg;
+    padding: $space-md $space-lg;
+    display: flex;
+    gap: $space-md;
+    align-items: flex-start;
+  }
+
+  &__benefit-icon {
+    color: $color-primary-green;
+    margin-top: 2px;
+    flex-shrink: 0;
+  }
+
+  &__benefit-title {
+    font-weight: 600;
+    font-size: 0.9375rem;
+    color: $color-text-dark;
+    margin-bottom: 2px;
+  }
+
+  &__benefit-desc {
+    font-size: 0.8125rem;
+    color: $color-text-muted;
+    line-height: 1.4;
+  }
+
+  // Mandatory plain-language privacy & retention note per §5
+  &__privacy-box {
+    background-color: #F4F7F4;
+    border: 1px solid rgba(47, 93, 58, 0.25);
+    border-radius: $radius-lg;
+    padding: $space-lg;
+    margin-top: $space-lg;
+  }
+
+  &__privacy-header {
+    display: flex;
+    align-items: center;
+    gap: $space-sm;
+    color: $color-primary-green;
+    font-weight: 700;
+    font-size: 0.9375rem;
+    margin-bottom: $space-sm;
+  }
+
+  &__privacy-list {
+    margin: 0;
+    padding-left: $space-lg;
+    font-size: 0.875rem;
+    color: #334433;
+    line-height: 1.6;
+
+    li {
+      margin-bottom: $space-xs;
+    }
+
+    strong {
+      color: $color-text-dark;
+    }
+  }
+}
+
+// ─── Step 2: Photo Upload Tiles (§12.2, §5) ─────────────────────────────────
+
+.verification-photos {
+  &__grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: $space-xl;
+    margin-bottom: $space-lg;
+
+    @media (max-width: 768px) {
+      grid-template-columns: 1fr;
+      gap: $space-lg;
+    }
+  }
+}
+
+.photo-uploader {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid $color-border;
+  border-radius: $radius-xl;
+  background: #ffffff;
+  padding: $space-lg;
+  position: relative;
+  transition: all 0.2s ease;
+
+  &--uploaded {
+    border-color: rgba(47, 93, 58, 0.4);
+    background-color: #FAFCFA;
+  }
+
+  &--error {
+    border-color: rgba(220, 38, 38, 0.5);
+    background-color: #FFFDFD;
+  }
+
+  &__title {
+    font-family: $font-heading;
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: $color-text-dark;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: $space-xs;
+  }
+
+  &__instructions {
+    font-size: 0.8125rem;
+    color: $color-text-muted;
+    line-height: 1.4;
+    margin-bottom: $space-md;
+    min-height: 38px;
+  }
+
+  &__dropzone {
+    border: 2px dashed $color-border;
+    border-radius: $radius-lg;
+    padding: $space-xl $space-md;
+    text-align: center;
+    background-color: #FAF9F6;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: $space-sm;
+    min-height: 200px;
+
+    &:hover,
+    &--dragover {
+      border-color: $color-primary-green;
+      background-color: rgba(47, 93, 58, 0.04);
+    }
+
+    &:focus-visible {
+      outline: 2px solid $color-primary-green;
+      outline-offset: 2px;
+    }
+  }
+
+  &__input {
+    display: none;
+  }
+
+  &__dropzone-icon {
+    color: $color-primary-green;
+    opacity: 0.85;
+  }
+
+  &__dropzone-text {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: $color-text-dark;
+
+    span {
+      color: $color-primary-green;
+      text-decoration: underline;
+    }
+  }
+
+  &__dropzone-hint {
+    font-size: 0.75rem;
+    color: $color-text-muted;
+  }
+
+  // Preview container when photo is selected or uploaded
+  &__preview-container {
+    position: relative;
+    border-radius: $radius-lg;
+    overflow: hidden;
+    border: 1px solid $color-border;
+    background-color: #222222;
+    height: 200px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  &__preview-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  &__preview-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.45);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: $space-sm;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+
+    &:hover,
+    &:focus-within {
+      opacity: 1;
+    }
+  }
+
+  &__status-banner {
+    display: flex;
+    align-items: center;
+    gap: $space-xs;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    margin-top: $space-md;
+
+    &--uploading {
+      color: $color-text-dark;
+    }
+
+    &--success {
+      color: #1F7A3E;
+    }
+
+    &--error {
+      color: #DC2626;
+    }
+  }
+
+  &__retry-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: $space-sm;
+    padding: $space-xs $space-sm;
+    background-color: #FEF2F2;
+    border: 1px solid rgba(220, 38, 38, 0.2);
+    border-radius: $radius-md;
+    font-size: 0.8125rem;
+    color: #991B1B;
+  }
+}
+
+// ─── Step 3: Review & Submit ────────────────────────────────────────────────
+
+.verification-review {
+  &__applicant-box {
+    background-color: #FAF9F6;
+    border: 1px solid $color-border;
+    border-radius: $radius-lg;
+    padding: $space-lg;
+    margin-bottom: $space-xl;
+  }
+
+  &__applicant-title {
+    font-family: $font-heading;
+    font-size: 1rem;
+    font-weight: 600;
+    color: $color-text-dark;
+    margin-bottom: $space-md;
+    display: flex;
+    align-items: center;
+    gap: $space-sm;
+  }
+
+  &__applicant-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: $space-md;
+
+    @media (max-width: 640px) {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  &__applicant-field {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  &__applicant-label {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: $color-text-muted;
+    font-weight: 600;
+  }
+
+  &__applicant-value {
+    font-size: 0.9375rem;
+    font-weight: 500;
+    color: $color-text-dark;
+  }
+
+  &__photos-preview-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: $space-lg;
+    margin-bottom: $space-xl;
+
+    @media (max-width: 640px) {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  &__photo-card {
+    border: 1px solid $color-border;
+    border-radius: $radius-lg;
+    overflow: hidden;
+    background-color: #ffffff;
+  }
+
+  &__photo-card-header {
+    padding: $space-sm $space-md;
+    background-color: #FAFAF7;
+    border-bottom: 1px solid $color-border;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: $color-text-dark;
+  }
+
+  &__photo-card-thumb {
+    width: 100%;
+    height: 180px;
+    object-fit: cover;
+    background-color: #222;
+  }
+
+  &__declaration {
+    margin-top: $space-lg;
+    padding: $space-md $space-lg;
+    background-color: #F8FAF8;
+    border: 1px solid rgba(47, 93, 58, 0.2);
+    border-radius: $radius-lg;
+    display: flex;
+    align-items: flex-start;
+    gap: $space-sm;
+
+    input[type="checkbox"] {
+      margin-top: 3px;
+      accent-color: $color-primary-green;
+      width: 18px;
+      height: 18px;
+      cursor: pointer;
+    }
+
+    label {
+      font-size: 0.875rem;
+      color: $color-text-dark;
+      line-height: 1.5;
+      cursor: pointer;
+    }
+  }
+}
+
+// ─── Status Cards (Pending / Verified / Rejected) ───────────────────────────
+
+.verification-status-card {
+  background: #ffffff;
+  border: 1px solid $color-border;
+  border-radius: $radius-xl;
+  box-shadow: $shadow-lg;
+  overflow: hidden;
+  text-align: center;
+  padding: $space-2xl;
+  max-width: 680px;
+  margin: 0 auto;
+
+  @media (max-width: 640px) {
+    padding: $space-xl $space-md;
+  }
+
+  &__badge-wrapper {
+    margin-bottom: $space-lg;
+    display: flex;
+    justify-content: center;
+  }
+
+  &__icon-circle {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto $space-lg;
+
+    &--verified {
+      background-color: rgba(31, 122, 62, 0.12);
+      color: #1F7A3E;
+    }
+
+    &--pending {
+      background-color: rgba(217, 119, 6, 0.12);
+      color: #D97706;
+    }
+
+    &--rejected {
+      background-color: rgba(220, 38, 38, 0.12);
+      color: #DC2626;
+    }
+  }
+
+  &__title {
+    font-family: $font-heading;
+    font-size: 1.625rem;
+    font-weight: 700;
+    color: $color-text-dark;
+    margin-bottom: $space-xs;
+  }
+
+  &__desc {
+    font-size: 0.9375rem;
+    color: $color-text-muted;
+    max-width: 500px;
+    margin: 0 auto $space-xl;
+    line-height: 1.5;
+  }
+
+  &__details-list {
+    background-color: #FAF9F5;
+    border: 1px solid $color-border;
+    border-radius: $radius-lg;
+    padding: $space-md $space-lg;
+    margin-bottom: $space-xl;
+    text-align: left;
+  }
+
+  &__detail-row {
+    display: flex;
+    justify-content: space-between;
+    padding: $space-xs 0;
+    font-size: 0.875rem;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+
+    &:last-child {
+      border-bottom: none;
+    }
+
+    &-label {
+      color: $color-text-muted;
+    }
+
+    &-value {
+      font-weight: 600;
+      color: $color-text-dark;
+    }
+  }
+
+  &__rejection-box {
+    background-color: #FEF2F2;
+    border: 1px solid rgba(220, 38, 38, 0.3);
+    border-radius: $radius-lg;
+    padding: $space-md $space-lg;
+    margin-bottom: $space-xl;
+    text-align: left;
+    color: #991B1B;
+
+    h4 {
+      font-weight: 700;
+      font-size: 0.9375rem;
+      margin-bottom: $space-xs;
+      display: flex;
+      align-items: center;
+      gap: $space-xs;
+    }
+
+    p {
+      font-size: 0.875rem;
+      line-height: 1.4;
+      margin: 0;
+    }
+  }
+
+  &__actions {
+    display: flex;
+    justify-content: center;
+    gap: $space-md;
+    flex-wrap: wrap;
+  }
+}
+
+// ─── Alerts & Error States (§12.4) ──────────────────────────────────────────
+
+.verification-alert {
+  padding: $space-md $space-lg;
+  border-radius: $radius-lg;
+  margin-bottom: $space-xl;
+  display: flex;
+  align-items: flex-start;
+  gap: $space-md;
+  font-size: 0.875rem;
+  line-height: 1.5;
+
+  &--error {
+    background-color: #FEF2F2;
+    border: 1px solid rgba(220, 38, 38, 0.3);
+    color: #991B1B;
+  }
+
+  &--warning {
+    background-color: #FFFBEB;
+    border: 1px solid rgba(217, 119, 6, 0.3);
+    color: #92400E;
+  }
+
+  &--info {
+    background-color: #F0FDF4;
+    border: 1px solid rgba(31, 122, 62, 0.3);
+    color: #166534;
+  }
+
+  &__content {
+    flex: 1;
+
+    strong {
+      display: block;
+      margin-bottom: 2px;
+      font-weight: 600;
+    }
+  }
+
+  &__retry-btn {
+    align-self: center;
+  }
+}
+
+// ─── Skeleton Loading State (§12.4 State 1) ─────────────────────────────────
+
+.verification-skeleton {
+  max-width: 840px;
+  margin: 0 auto;
+
+  &__header {
+    height: 48px;
+    background: linear-gradient(90deg, #EBE6D8 25%, #F4EFE3 50%, #EBE6D8 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+    border-radius: $radius-md;
+    margin-bottom: $space-xl;
+  }
+
+  &__card {
+    height: 380px;
+    background: linear-gradient(90deg, #EBE6D8 25%, #F4EFE3 50%, #EBE6D8 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+    border-radius: $radius-xl;
+  }
+}
+
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
