@@ -1,0 +1,283 @@
+@use './tokens' as *;
+
+// CSS Custom Properties Export
+:root {
+  --color-primary-green: #{$color-primary-green};
+  --color-primary-dark: #{$color-primary-dark};
+  --color-leaf-green: #{$color-leaf-green};
+  --color-leaf-light: #{$color-leaf-light};
+  --color-warm-cream: #{$color-warm-cream};
+  --color-pale-green: #{$color-pale-green};
+  --color-soil-brown: #{$color-soil-brown};
+  --color-soil-dark: #{$color-soil-dark};
+  --color-main-text: #{$color-main-text};
+  --color-muted-text: #{$color-muted-text};
+  --color-border: #{$color-border};
+  --color-border-dark: #{$color-border-dark};
+  --color-surface: #{$color-surface};
+  --color-sidebar-bg: #{$color-sidebar-bg};
+
+  --color-error: #{$color-error};
+  --color-error-bg: #{$color-error-bg};
+  --color-warning: #{$color-warning};
+  --color-warning-bg: #{$color-warning-bg};
+  --color-success: #{$color-success};
+  --color-success-bg: #{$color-success-bg};
+  --color-info: #{$color-info};
+  --color-info-bg: #{$color-info-bg};
+
+  --space-xs: #{$space-xs};
+  --space-sm: #{$space-sm};
+  --space-md: #{$space-md};
+  --space-lg: #{$space-lg};
+  --space-xl: #{$space-xl};
+  --space-2xl: #{$space-2xl};
+
+  --radius-sm: #{$radius-sm};
+  --radius-md: #{$radius-md};
+  --radius-lg: #{$radius-lg};
+  --radius-xl: #{$radius-xl};
+  --radius-full: #{$radius-full};
+
+  --font-sans: #{$font-sans};
+  --font-heading: #{$font-heading};
+
+  --shadow-sm: #{$shadow-sm};
+  --shadow-md: #{$shadow-md};
+  --shadow-lg: #{$shadow-lg};
+  --shadow-tactile-card: #{$shadow-tactile-card};
+}
+
+// Global Reset & Base
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  height: 100%;
+  font-family: var(--font-sans);
+  background-color: var(--color-warm-cream);
+  color: var(--color-main-text);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+// Headings
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-heading);
+  color: var(--color-main-text);
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+h1 { font-size: 1.875rem; letter-spacing: -0.02em; }
+h2 { font-size: 1.5rem; letter-spacing: -0.01em; }
+h3 { font-size: 1.25rem; }
+h4 { font-size: 1.125rem; }
+h5 { font-size: 1rem; }
+
+// Tactile Button System (§12.1 & Prompt 9)
+// Buttons have visible hover, pressed (tactile push), focus ring, and disabled states.
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-sm);
+  font-family: var(--font-sans);
+  font-size: 0.9375rem;
+  font-weight: 500;
+  padding: 0.625rem 1.25rem;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  text-decoration: none;
+  border: 1px solid transparent;
+  transition: background-color #{$transition-fast}, transform #{$transition-fast}, box-shadow #{$transition-fast};
+  user-select: none;
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: #{$focus-ring};
+  }
+
+  &:disabled, &.btn-disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+    pointer-events: none;
+    box-shadow: none !important;
+    transform: none !important;
+  }
+
+  // Primary Button (Deep Forest Green with tactile depth)
+  &-primary {
+    background-color: var(--color-primary-green);
+    color: #FFFFFF;
+    box-shadow: #{$shadow-tactile-btn};
+
+    &:hover:not(:disabled) {
+      background-color: var(--color-primary-dark);
+      transform: translateY(-1px);
+    }
+
+    &:active:not(:disabled) {
+      transform: translateY(1px);
+      box-shadow: #{$shadow-tactile-btn-pressed};
+    }
+  }
+
+  // Secondary Button (Pale Green surface)
+  &-secondary {
+    background-color: var(--color-pale-green);
+    color: var(--color-primary-green);
+    border-color: #C7DAC0;
+    box-shadow: 0 1px 0 #B8CEB0, #{$shadow-sm};
+
+    &:hover:not(:disabled) {
+      background-color: #DDECD6;
+      transform: translateY(-1px);
+    }
+
+    &:active:not(:disabled) {
+      transform: translateY(1px);
+      box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.08);
+    }
+  }
+
+  // Outline Button
+  &-outline {
+    background-color: transparent;
+    color: var(--color-primary-green);
+    border-color: var(--color-border);
+
+    &:hover:not(:disabled) {
+      background-color: rgba(47, 93, 58, 0.05);
+      border-color: var(--color-primary-green);
+    }
+
+    &:active:not(:disabled) {
+      background-color: rgba(47, 93, 58, 0.1);
+    }
+  }
+
+  // Danger Button
+  &-danger {
+    background-color: var(--color-error);
+    color: #FFFFFF;
+    box-shadow: 0 2px 0 #8C1B12, 0 3px 6px rgba(180, 35, 24, 0.2);
+
+    &:hover:not(:disabled) {
+      background-color: #9E1F15;
+      transform: translateY(-1px);
+    }
+
+    &:active:not(:disabled) {
+      transform: translateY(1px);
+      box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2);
+    }
+  }
+
+  // Ghost Button
+  &-ghost {
+    background-color: transparent;
+    color: var(--color-main-text);
+
+    &:hover:not(:disabled) {
+      background-color: rgba(0, 0, 0, 0.04);
+    }
+  }
+
+  // Sizes
+  &-sm {
+    padding: 0.375rem 0.75rem;
+    font-size: 0.8125rem;
+  }
+
+  &-lg {
+    padding: 0.75rem 1.5rem;
+    font-size: 1rem;
+  }
+}
+
+// Input Fields — Flat, high-contrast, no texture (§12.1 / §12.2)
+.input-field {
+  display: block;
+  width: 100%;
+  font-family: var(--font-sans);
+  font-size: 0.9375rem;
+  color: var(--color-main-text);
+  background-color: var(--color-surface);
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 0.625rem 0.875rem;
+  line-height: 1.5;
+  transition: border-color #{$transition-fast}, box-shadow #{$transition-fast};
+  appearance: none;
+  -webkit-appearance: none;
+
+  &::placeholder {
+    color: var(--color-muted-text);
+    opacity: 0.65;
+  }
+
+  &:hover:not(:disabled) {
+    border-color: var(--color-border-dark);
+  }
+
+  &:focus {
+    outline: none;
+    border-color: var(--color-primary-green);
+    box-shadow: #{$focus-ring};
+  }
+
+  &--error,
+  &[aria-invalid="true"] {
+    border-color: var(--color-error);
+    &:focus { box-shadow: #{$focus-ring-error}; }
+  }
+
+  &:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+    background-color: var(--color-pale-green);
+  }
+}
+
+// Select — shares input styling
+.select-field {
+  @extend .input-field;
+  padding-right: 2.25rem;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='%235B6E60'%3E%3Cpath fill-rule='evenodd' d='M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z' clip-rule='evenodd'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.625rem center;
+  background-size: 1.25rem;
+  cursor: pointer;
+}
+
+// Textarea
+.textarea-field {
+  @extend .input-field;
+  resize: vertical;
+  min-height: 100px;
+}
+
+// Flat Data Surface Card (No textures behind data per §12.1)
+.card {
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-lg);
+  box-shadow: var(--shadow-tactile-card);
+  transition: border-color #{$transition-fast}, box-shadow #{$transition-fast};
+
+  &--interactive {
+    cursor: pointer;
+
+    &:hover {
+      border-color: var(--color-border-dark);
+      box-shadow: 0 4px 14px rgba(47, 93, 58, 0.08);
+      transform: translateY(-1px);
+    }
+  }
+}

@@ -1,0 +1,422 @@
+/**
+ * Bhoomi Auth Screens — Shared SCSS
+ *
+ * Styles shared by LoginScreen, RegisterScreen, and ProfileScreen.
+ * Calm warm-cream background, centred card layout, forest-green branding.
+ * No textured backgrounds behind forms per §12.1.
+ */
+
+@use 'sass:color';
+@use '../../design-system/tokens' as *;
+
+
+// ─── Auth Page Shell ──────────────────────────────────────────────────────────
+
+.auth-page {
+  min-height: 100vh;
+  background-color: $color-warm-cream;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: $space-lg;
+
+  @media (max-width: 480px) {
+    padding: $space-md;
+    align-items: flex-start;
+    padding-top: $space-xl;
+  }
+}
+
+// ─── Auth Card ────────────────────────────────────────────────────────────────
+
+.auth-card {
+  background-color: #fff;
+  border: 1px solid $color-border;
+  border-radius: $radius-xl;
+  box-shadow: $shadow-lg;
+  width: 100%;
+  max-width: 420px;
+  overflow: hidden;
+
+  @media (max-width: 480px) {
+    border-radius: $radius-lg;
+    max-width: 100%;
+  }
+}
+
+// ─── Auth Header (Forest-green brand strip) ───────────────────────────────────
+
+.auth-header {
+  background-color: $color-primary-green;
+  padding: $space-xl $space-xl $space-lg;
+  text-align: center;
+
+  &__logo {
+    display: inline-flex;
+    align-items: center;
+    gap: $space-sm;
+    color: #fff;
+    font-family: $font-heading;
+    font-size: 1.5rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    margin-bottom: $space-xs;
+  }
+
+  &__leaf {
+    font-size: 1.75rem;
+    line-height: 1;
+  }
+
+  &__subtitle {
+    color: rgba(255, 255, 255, 0.82);
+    font-size: 0.875rem;
+    font-family: $font-sans;
+  }
+}
+
+// ─── Auth Body ────────────────────────────────────────────────────────────────
+
+.auth-body {
+  padding: $space-xl;
+
+  @media (max-width: 480px) {
+    padding: $space-lg;
+  }
+}
+
+// ─── Auth Form ────────────────────────────────────────────────────────────────
+
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: $space-md;
+}
+
+// ─── Password Toggle Wrapper ──────────────────────────────────────────────────
+
+.input-with-toggle {
+  position: relative;
+  display: flex;
+  align-items: center;
+
+  .input-field {
+    padding-right: 2.75rem;
+  }
+
+  &__toggle {
+    position: absolute;
+    right: 0.75rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: $color-muted-text;
+    padding: 0;
+    transition: color $transition-fast;
+
+    &:hover { color: $color-primary-green; }
+    &:focus-visible {
+      outline: none;
+      box-shadow: $focus-ring;
+      border-radius: $radius-sm;
+    }
+  }
+}
+
+// ─── Alert Banner (API/network errors — distinct from validation) ─────────────
+
+.auth-alert {
+  display: flex;
+  align-items: flex-start;
+  gap: $space-sm;
+  padding: $space-sm $space-md;
+  border-radius: $radius-md;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  animation: slideDown 200ms ease-out;
+
+  &__icon { flex-shrink: 0; margin-top: 1px; }
+  &__text { flex: 1; }
+
+  &--error {
+    background-color: $color-error-bg;
+    color: $color-error;
+    border: 1px solid rgba($color-error, 0.25);
+  }
+
+  &--success {
+    background-color: $color-success-bg;
+    color: $color-success;
+    border: 1px solid rgba($color-success, 0.25);
+  }
+
+  &--info {
+    background-color: $color-info-bg;
+    color: $color-info;
+    border: 1px solid rgba($color-info, 0.25);
+  }
+}
+
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+// ─── Submit Button (full-width) ───────────────────────────────────────────────
+
+.auth-submit {
+  width: 100%;
+  justify-content: center;
+  margin-top: $space-sm;
+  padding: 0.75rem;
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  position: relative;
+}
+
+// ─── Loading Spinner ──────────────────────────────────────────────────────────
+
+.auth-spinner {
+  display: inline-block;
+  width: 1rem;
+  height: 1rem;
+  border: 2px solid rgba(255, 255, 255, 0.35);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  vertical-align: middle;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+// ─── Auth Footer Links ────────────────────────────────────────────────────────
+
+.auth-footer {
+  margin-top: $space-lg;
+  text-align: center;
+  font-size: 0.875rem;
+  color: $color-muted-text;
+
+  a, &__link {
+    color: $color-primary-green;
+    font-weight: 500;
+    text-decoration: none;
+    cursor: pointer;
+    background: none;
+    border: none;
+    font-size: inherit;
+    padding: 0;
+
+    &:hover { text-decoration: underline; }
+    &:focus-visible {
+      outline: none;
+      box-shadow: $focus-ring;
+      border-radius: 2px;
+    }
+  }
+}
+
+// ─── Profile Page Layout ──────────────────────────────────────────────────────
+
+.profile-page {
+  min-height: 100vh;
+  background-color: $color-warm-cream;
+  padding: $space-xl $space-lg;
+
+  @media (max-width: 600px) {
+    padding: $space-lg $space-md;
+  }
+}
+
+.profile-card {
+  background-color: #fff;
+  border: 1px solid $color-border;
+  border-radius: $radius-xl;
+  box-shadow: $shadow-md;
+  width: 100%;
+  max-width: 560px;
+  margin: 0 auto;
+  overflow: hidden;
+}
+
+.profile-header {
+  background: linear-gradient(135deg, $color-primary-green 0%, color.adjust($color-primary-green, $lightness: -8%) 100%);
+  padding: $space-xl;
+  display: flex;
+  align-items: center;
+  gap: $space-md;
+
+  &__avatar {
+    width: 64px;
+    height: 64px;
+    border-radius: $radius-full;
+    background-color: rgba(255, 255, 255, 0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: $font-heading;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #fff;
+    flex-shrink: 0;
+    border: 2px solid rgba(255, 255, 255, 0.4);
+  }
+
+  &__info {
+    flex: 1;
+    min-width: 0;
+  }
+
+  &__name {
+    font-family: $font-heading;
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #fff;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  &__meta {
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 0.8125rem;
+    margin-top: 2px;
+  }
+
+  &__badge {
+    background-color: rgba(255, 255, 255, 0.18);
+    color: #fff;
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 2px 10px;
+    border-radius: $radius-full;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-top: $space-xs;
+    display: inline-block;
+  }
+}
+
+.profile-body {
+  padding: $space-xl;
+
+  @media (max-width: 480px) {
+    padding: $space-lg;
+  }
+}
+
+.profile-section {
+  &:not(:last-child) {
+    margin-bottom: $space-xl;
+    padding-bottom: $space-xl;
+    border-bottom: 1px solid $color-border;
+  }
+
+  &__title {
+    font-size: 0.8125rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: $color-muted-text;
+    margin-bottom: $space-md;
+  }
+
+  &__form {
+    display: flex;
+    flex-direction: column;
+    gap: $space-md;
+  }
+}
+
+.profile-info-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: $space-sm 0;
+  border-bottom: 1px solid rgba($color-border, 0.6);
+  font-size: 0.9375rem;
+
+  &:last-child { border-bottom: none; }
+
+  &__label { color: $color-muted-text; font-size: 0.875rem; }
+  &__value { color: $color-main-text; font-weight: 500; }
+}
+
+// ─── Danger zone ──────────────────────────────────────────────────────────────
+
+.danger-zone {
+  border: 1px solid rgba($color-error, 0.3);
+  border-radius: $radius-md;
+  padding: $space-md;
+  background-color: rgba($color-error-bg, 0.5);
+
+  &__title {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: $color-error;
+    margin-bottom: $space-xs;
+  }
+
+  &__description {
+    font-size: 0.8125rem;
+    color: $color-muted-text;
+    margin-bottom: $space-md;
+  }
+}
+
+// ─── Loading Skeleton ─────────────────────────────────────────────────────────
+
+.auth-skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: $space-md;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+.skeleton-line {
+  height: 1rem;
+  background: linear-gradient(90deg, $color-border 25%, color.adjust($color-border, $lightness: -5%) 50%, $color-border 75%);
+  background-size: 200% 100%;
+  border-radius: $radius-sm;
+  animation: shimmer 1.5s infinite;
+
+  &--short { width: 40%; }
+  &--medium { width: 65%; }
+  &--full { width: 100%; }
+  &--input { height: 2.75rem; border-radius: $radius-md; }
+}
+
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+// ─── Permission Denied State ──────────────────────────────────────────────────
+
+.auth-denied {
+  text-align: center;
+  padding: $space-2xl $space-xl;
+  color: $color-muted-text;
+
+  &__icon {
+    font-size: 3rem;
+    margin-bottom: $space-md;
+  }
+
+  &__title {
+    font-family: $font-heading;
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: $color-main-text;
+    margin-bottom: $space-sm;
+  }
+
+  &__message { font-size: 0.9375rem; }
+}

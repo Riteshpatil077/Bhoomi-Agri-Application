@@ -1,11 +1,71 @@
 /**
- * Bhoomi — Application Router Shell
- * Sets up React Router with placeholder routes.
- * Each screen is built out in Prompts 10–19.
+ * Bhoomi — Application Router
+ * Wires auth screens and protected routes.
+ * Auth context is provided by AuthProvider (wraps this in App.tsx).
  */
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, Outlet } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
+import { LoginScreen } from "../screens/auth/LoginScreen";
+import { RegisterScreen } from "../screens/auth/RegisterScreen";
+import { ProfileScreen } from "../screens/auth/ProfileScreen";
+import { StyleGuidePage } from "../screens/style-guide/StyleGuidePage";
 
-// Placeholder page component — replaced module by module in Prompts 10–19
+// ─── Guards ───────────────────────────────────────────────────────────────────
+
+/**
+ * ProtectedRoute — redirects to /login if not authenticated.
+ * Waits for session initialization before making any decision.
+ */
+function ProtectedRoute() {
+  const { isAuthenticated, isInitialized, isLoading } = useAuth();
+
+  if (!isInitialized || isLoading) {
+    // Render a minimal full-screen loading state while session is being restored
+    return (
+      <div
+        style={{
+          minHeight: "100vh",
+          background: "#F7F3E8",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+        aria-label="Loading…"
+        aria-busy="true"
+      >
+        <div style={{ textAlign: "center", color: "#5B6E60" }}>
+          <div
+            style={{
+              width: 40,
+              height: 40,
+              border: "3px solid #D8DFD2",
+              borderTopColor: "#2F5D3A",
+              borderRadius: "50%",
+              animation: "spin 0.7s linear infinite",
+              margin: "0 auto 1rem",
+            }}
+          />
+          <p style={{ fontFamily: "Inter, sans-serif", fontSize: "0.9rem" }}>Loading…</p>
+        </div>
+        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      </div>
+    );
+  }
+
+  return isAuthenticated ? <Outlet /> : <Navigate to="/login" replace />;
+}
+
+/**
+ * PublicRoute — redirects authenticated users away from login/register.
+ */
+function PublicRoute() {
+  const { isAuthenticated, isInitialized } = useAuth();
+  if (!isInitialized) return null;
+  return isAuthenticated ? <Navigate to="/dashboard" replace /> : <Outlet />;
+}
+
+// ─── Placeholder ──────────────────────────────────────────────────────────────
+
 function PlaceholderPage({ title }: { title: string }) {
   return (
     <div
@@ -40,32 +100,39 @@ function PlaceholderPage({ title }: { title: string }) {
   );
 }
 
+// ─── Router ───────────────────────────────────────────────────────────────────
+
 export function AppRouter() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* Public routes */}
-        <Route path="/login" element={<PlaceholderPage title="Login — Prompt 10" />} />
-        <Route path="/register" element={<PlaceholderPage title="Register — Prompt 10" />} />
+        {/* Public-only routes (redirect if already authenticated) */}
+        <Route element={<PublicRoute />}>
+          <Route path="/login" element={<LoginScreen />} />
+          <Route path="/register" element={<RegisterScreen />} />
+        </Route>
 
-        {/* Farmer routes — built Prompts 12–16 */}
-        <Route path="/dashboard" element={<PlaceholderPage title="Dashboard — Prompt 16" />} />
-        <Route path="/farms" element={<PlaceholderPage title="My Farms — Prompt 12" />} />
-        <Route path="/farms/:farmId" element={<PlaceholderPage title="Farm Detail — Prompt 12" />} />
-        <Route path="/farms/:farmId/plots/:plotId" element={<PlaceholderPage title="Plot Detail — Prompt 12" />} />
-        <Route path="/crop-cycles" element={<PlaceholderPage title="Crop Cycles — Prompt 13" />} />
-        <Route path="/activities" element={<PlaceholderPage title="Activities — Prompt 14" />} />
-        <Route path="/weather" element={<PlaceholderPage title="Weather — Prompt 15" />} />
-        <Route path="/verification" element={<PlaceholderPage title="Verification — Prompt 11" />} />
-        <Route path="/profile" element={<PlaceholderPage title="Profile — Prompt 10" />} />
+        {/* Protected routes (redirect to /login if not authenticated) */}
+        <Route element={<ProtectedRoute />}>
+          <Route path="/profile" element={<ProfileScreen />} />
+          <Route path="/dashboard" element={<PlaceholderPage title="Dashboard — Prompt 16" />} />
+          <Route path="/farms" element={<PlaceholderPage title="My Farms — Prompt 12" />} />
+          <Route path="/farms/:farmId" element={<PlaceholderPage title="Farm Detail — Prompt 12" />} />
+          <Route path="/farms/:farmId/plots/:plotId" element={<PlaceholderPage title="Plot Detail — Prompt 12" />} />
+          <Route path="/crop-cycles" element={<PlaceholderPage title="Crop Cycles — Prompt 13" />} />
+          <Route path="/activities" element={<PlaceholderPage title="Activities — Prompt 14" />} />
+          <Route path="/weather" element={<PlaceholderPage title="Weather — Prompt 15" />} />
+          <Route path="/verification" element={<PlaceholderPage title="Verification — Prompt 11" />} />
+          {/* Admin routes — Prompt 18 */}
+          <Route path="/admin" element={<PlaceholderPage title="Admin Dashboard — Prompt 18" />} />
+          <Route path="/admin/*" element={<PlaceholderPage title="Admin — Prompt 18" />} />
+          {/* Super Admin routes — Prompt 19 */}
+          <Route path="/super-admin" element={<PlaceholderPage title="Super Admin Panel — Prompt 19" />} />
+          <Route path="/super-admin/*" element={<PlaceholderPage title="Super Admin — Prompt 19" />} />
+        </Route>
 
-        {/* Admin routes — built Prompt 18 */}
-        <Route path="/admin" element={<PlaceholderPage title="Admin Dashboard — Prompt 18" />} />
-        <Route path="/admin/*" element={<PlaceholderPage title="Admin — Prompt 18" />} />
-
-        {/* Super Admin routes — built Prompt 19 */}
-        <Route path="/super-admin" element={<PlaceholderPage title="Super Admin Panel — Prompt 19" />} />
-        <Route path="/super-admin/*" element={<PlaceholderPage title="Super Admin — Prompt 19" />} />
+        {/* Dev tool — not protected */}
+        <Route path="/style-guide" element={<StyleGuidePage />} />
 
         {/* Default redirect */}
         <Route path="/" element={<Navigate to="/dashboard" replace />} />

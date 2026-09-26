@@ -259,11 +259,72 @@ Updated after every completed, verified module per the Prompt 0 working agreemen
 ### Summary of Backend MVP (Prompts 1–8)
 All 8 backend modules of the MVP are fully implemented, verified, and passing 92 automated tests with 86% coverage. All RBAC rules, strict owner-only access controls, audit logs with mandatory reasons, separate private/public storage abstractions, and Celery beat background jobs are verified.
 
+
 ---
 
-_Next: Prompt 9 — Design Tokens & Shared Layout (Modern Agriculture Skeuomorphism Frontend)_
+## Prompt 9 — Design Tokens & Shared Layout ✅
 
+**Completed**: 2026-09-26
 
+### What was built
+- `frontend/src/design-system/tokens.scss` — Full design token library (§12.1 palette, spacing scale, radii, shadows, typography, focus rings, transitions)
+- `frontend/src/design-system/index.scss` — Global reset, heading scale, tactile `.btn` system (primary/secondary/outline/danger/ghost + sm/lg sizes, hover/active/focus/disabled states per §12), `.card`, `.input-field`, `.select-field`, `.textarea-field` (flat, high-contrast, no texture behind data)
+- `frontend/src/design-system/index.ts` — Barrel export for all components
+- **Components** (`frontend/src/design-system/components/`):
+  - `AppShell` — Layout shell with sidebar (desktop) + bottom nav (mobile)
+  - `Sidebar` — Dark forest-green sidebar, 6 nav items (Dashboard/Farms/Crop Cycles/Activities/Weather/Profile)
+  - `BottomNavigation` — Mobile 5-item bottom bar (Home/Farms/Activities/Weather/More)
+  - `PageHeader` — Title + breadcrumb + action slot
+  - `StatusBadge` — Icon + label badge, never color alone (§12.5), 10 variants
+  - `FormField` — Accessible label/hint/error wrapper with `aria-describedby`
+  - `EmptyState` — Icon + title + description + optional action
+  - `ConfirmDialog` — Accessible modal (primary/danger variants), Escape key, focus trap
+  - `Toast` + `ToastContext` — Global notification system with `useToast()` hook
+  - `PermissionGate` — Display-only role/permission wrapper; clearly commented as NOT a security boundary (§12.3)
+- `frontend/src/screens/style-guide/StyleGuidePage.tsx` — Full component showcase for design review
+- `frontend/index.html` — Google Fonts (Inter, Outfit) loaded
+- `frontend/src/main.tsx` — Imports design-system SCSS
+- `frontend/src/App.tsx` — Wrapped with `ToastProvider`
 
+### Tests
+- Frontend build & typecheck: **0 errors**
 
+### Known deferred items (not bugs)
+- All `/screens/*` routes were placeholder pages — built out from Prompt 10 onwards
+
+---
+
+## Prompt 10 — Authentication Screens ✅
+
+**Completed**: 2026-09-26
+
+### What was built
+- `frontend/src/api/csrf.ts` — In-memory CSRF token store; `setCsrfTokens`, `csrfHeaders`, `csrfRefreshHeaders`, `clearCsrfTokens`; memory-only (no localStorage) per §6 double-submit pattern
+- `frontend/src/api/auth.ts` — Typed auth API layer: `login`, `register`, `logout`, `logoutAll`, `refreshTokens`, `fetchCurrentUser`, `updateProfile`, `changePassword`; CSRF headers injected on every mutating call; `platform_role` never sent from client (§7.6)
+- `frontend/src/context/AuthContext.tsx` — Global session state (`AuthProvider` + `useAuth`); on mount silently calls `GET /api/auth/me` to restore session from httpOnly cookie with one transparent refresh attempt; exposes `user`, `isAuthenticated`, `isLoading`, `isInitialized` and all auth actions; SECURITY NOTE inline that context is a convenience layer, not a security boundary (§7)
+- `frontend/src/screens/auth/auth.scss` — Shared auth screen SCSS: warm-cream auth page layout, forest-green brand header, flat form card, `.input-with-toggle`, `.auth-alert` (error/success/info variants), `.auth-submit`, loading skeleton, and full profile card layout
+- `frontend/src/screens/auth/LoginScreen.tsx` — Login: phone/email + password, show/hide toggle, language selector (7 languages: English/Hindi/Marathi/Punjabi/Telugu/Tamil/Bengali), all 7 UI states:
+  1. Loading — spinner on button, inputs disabled
+  2. Empty — clean form
+  3. Success — navigate to /dashboard
+  4. Validation — inline required/format errors
+  5. API error — credentials-failed banner
+  6. Permission denied — deactivated account (403) message with ShieldX icon
+  7. Unavailable — network error with WifiOff icon + Retry button
+- `frontend/src/screens/auth/RegisterScreen.tsx` — Register: full name, phone, email, password + confirm, optional user_type (farmer/buyer/expert/provider), language; `platform_role` never collected (§7.6); all 7 UI states including success banner + "Sign in" link
+- `frontend/src/screens/auth/ProfileScreen.tsx` — Profile: avatar initials, account info rows, inline edit form, password change form, session management (logout/logout-all with `ConfirmDialog`); `StatusBadge` for verification status (never color alone, §12.5); all 7 UI states including loading skeleton, session-expired redirect to login
+- `frontend/src/app/AppRouter.tsx` — Updated with `ProtectedRoute` (redirects to /login if not authenticated, shows loading spinner while session restores) and `PublicRoute` (redirects authenticated users away from /login and /register)
+- `frontend/src/App.tsx` — Wrapped with `AuthProvider` (inside `ToastProvider`)
+
+### Tests
+- Frontend build & typecheck: **0 errors, 0 warnings**
+- All 7 required UI states (§12.4) verified present on all three auth screens
+
+### Known deferred items (not bugs)
+- `PATCH /auth/me` endpoint — backend not yet implemented (backend was not planned in Prompt 3; update via `updateProfile` call will return 404 until a profile-update endpoint is added in a future backend pass)
+- `POST /auth/change-password` endpoint — similarly requires a backend route (frontend wired, API call will 404 until backend adds the endpoint)
+
+---
+
+_Next: Prompt 11 — Verification Flow (3-step stepper: Purpose → Photos → Review)_
 

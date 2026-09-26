@@ -1,0 +1,65 @@
+// ============================================================================
+// Bhoomi Design System — Modern Agriculture Skeuomorphism Design Tokens (§12)
+// ============================================================================
+
+// Color Palette (§12.1)
+$color-primary-green: #2F5D3A;  // Main buttons, navigation, key actions
+$color-primary-dark:  #1E4026;  // Pressed buttons, active dark states
+$color-leaf-green:    #6F965A;  // Secondary accents, crop highlights
+$color-leaf-light:    #A3C293;  // Soft leaf accents
+$color-warm-cream:    #F7F3E8;  // Main page background (tactile warmth)
+$color-pale-green:    #E8F0E3;  // Summary cards, selected states
+$color-soil-brown:    #79563D;  // Small decorative accents only — never body text
+$color-soil-dark:     #543A26;  // Earthy contrast accents
+$color-main-text:     #263229;  // Headings and high-contrast body text
+$color-muted-text:    #5B6E60;  // Subheadings, secondary captions
+$color-border:        #D8DFD2;  // Inputs, card borders, dividers
+$color-border-dark:   #B8C4B0;  // Hover/focus border states
+$color-surface:       #FFFFFF;  // Flat card surface (never textured behind text per §12.1)
+$color-sidebar-bg:    #183420;  // Deep forest-green desktop sidebar
+
+// Feedback Colors (labeled, never color alone per §12.5)
+$color-error:         #B42318;  // Validation and error messages
+$color-error-bg:      #FEE4E2;  // Error alerts/badge backgrounds
+$color-warning:       #8A5A00;  // Caution / attention states
+$color-warning-bg:    #FEF0C7;  // Warning badge background
+$color-success:       #2F5D3A;  // Success indicators
+$color-success-bg:    #D1FADF;  // Success badge background
+$color-info:          #175CD3;  // Informational alerts
+$color-info-bg:       #D1E9FF;  // Info badge background
+
+// Spacing Scale
+$space-xs:  4px;
+$space-sm:  8px;
+$space-md:  16px;
+$space-lg:  24px;
+$space-xl:  32px;
+$space-2xl: 48px;
+$space-3xl: 64px;
+
+// Border Radii Scale
+$radius-sm:   6px;
+$radius-md:   10px;
+$radius-lg:   16px;
+$radius-xl:   24px;
+$radius-full: 9999px;
+
+// Typography Scale
+$font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+$font-heading: 'Outfit', 'Inter', -apple-system, sans-serif;
+
+// Shadows (Subtle, tactile skeuomorphism per §12)
+$shadow-sm: 0 1px 2px rgba(38, 50, 41, 0.05);
+$shadow-md: 0 4px 10px -2px rgba(47, 93, 58, 0.08), 0 2px 4px -1px rgba(0, 0, 0, 0.04);
+$shadow-lg: 0 12px 24px -4px rgba(47, 93, 58, 0.12), 0 4px 8px -2px rgba(0, 0, 0, 0.06);
+$shadow-tactile-card: 0 2px 0 #D8DFD2, 0 4px 12px rgba(47, 93, 58, 0.06);
+$shadow-tactile-btn: 0 2px 0 #183420, 0 3px 6px rgba(0, 0, 0, 0.12);
+$shadow-tactile-btn-pressed: 0 0 0 transparent, inset 0 2px 4px rgba(0, 0, 0, 0.2);
+
+// Focus Ring
+$focus-ring: 0 0 0 3px rgba(47, 93, 58, 0.25);
+$focus-ring-error: 0 0 0 3px rgba(180, 35, 24, 0.25);
+
+// Transitions
+$transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+$transition-normal: 250ms cubic-bezier(0.4, 0, 0.2, 1);

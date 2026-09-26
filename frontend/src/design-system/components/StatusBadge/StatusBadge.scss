@@ -1,0 +1,66 @@
+@use '../../tokens' as *;
+
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-sans);
+  font-weight: 500;
+  border-radius: var(--radius-full);
+  line-height: 1;
+  white-space: nowrap;
+  user-select: none;
+  border: 1px solid transparent;
+
+  &--md {
+    padding: 4px 10px;
+    font-size: 0.8125rem;
+  }
+
+  &--sm {
+    padding: 2px 8px;
+    font-size: 0.75rem;
+    gap: 4px;
+  }
+
+  &__icon {
+    flex-shrink: 0;
+  }
+
+  // Variants with labeled backgrounds and high-contrast text
+  &--verified, &--active {
+    background-color: var(--color-success-bg);
+    color: var(--color-success);
+    border-color: #A6F4C5;
+  }
+
+  &--pending, &--due {
+    background-color: var(--color-warning-bg);
+    color: var(--color-warning);
+    border-color: #FEDF89;
+  }
+
+  &--rejected, &--failed, &--overdue {
+    background-color: var(--color-error-bg);
+    color: var(--color-error);
+    border-color: #FECDCA;
+  }
+
+  &--harvested {
+    background-color: #EFE8DC;
+    color: var(--color-soil-brown);
+    border-color: #D9CEBE;
+  }
+
+  &--official {
+    background-color: var(--color-pale-green);
+    color: var(--color-primary-green);
+    border-color: #C2DEC1;
+  }
+
+  &--draft {
+    background-color: #F2F4F7;
+    color: #475467;
+    border-color: #EAECF0;
+  }
+}

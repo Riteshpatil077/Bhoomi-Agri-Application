@@ -1,0 +1,107 @@
+@use '../../tokens' as *;
+
+.toast-container {
+  position: fixed;
+  top: var(--space-lg);
+  right: var(--space-lg);
+  z-index: 2000;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  max-width: 420px;
+  width: calc(100vw - 32px);
+  pointer-events: none;
+
+  @media (max-width: 768px) {
+    top: var(--space-md);
+    right: var(--space-md);
+    left: var(--space-md);
+    width: auto;
+  }
+}
+
+.toast {
+  pointer-events: auto;
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-md);
+  padding: var(--space-md);
+  border-radius: var(--radius-lg);
+  background-color: var(--color-surface);
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
+  border: 1px solid var(--color-border);
+  animation: toastSlideIn 200ms cubic-bezier(0.16, 1, 0.3, 1);
+  transition: transform 150ms ease, opacity 150ms ease;
+
+  &__icon {
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+
+  &__content {
+    flex: 1;
+    min-width: 0;
+  }
+
+  &__title {
+    font-size: 0.875rem;
+    font-weight: 600;
+    margin: 0 0 2px 0;
+    color: var(--color-main-text);
+  }
+
+  &__message {
+    font-size: 0.8125rem;
+    color: var(--color-muted-text);
+    margin: 0;
+    line-height: 1.4;
+    word-break: break-word;
+  }
+
+  &__close-btn {
+    background: transparent;
+    border: none;
+    color: var(--color-muted-text);
+    cursor: pointer;
+    padding: 4px;
+    border-radius: var(--radius-sm);
+    flex-shrink: 0;
+
+    &:hover {
+      background-color: rgba(0, 0, 0, 0.05);
+      color: var(--color-main-text);
+    }
+  }
+
+  // Type variants
+  &--success {
+    border-left: 4px solid var(--color-primary-green);
+    .toast__icon { color: var(--color-primary-green); }
+  }
+
+  &--error {
+    border-left: 4px solid var(--color-error);
+    .toast__icon { color: var(--color-error); }
+  }
+
+  &--warning {
+    border-left: 4px solid var(--color-warning);
+    .toast__icon { color: var(--color-warning); }
+  }
+
+  &--info {
+    border-left: 4px solid var(--color-info);
+    .toast__icon { color: var(--color-info); }
+  }
+}
+
+@keyframes toastSlideIn {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}

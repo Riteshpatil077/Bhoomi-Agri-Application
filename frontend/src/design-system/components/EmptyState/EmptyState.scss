@@ -1,0 +1,45 @@
+@use '../../tokens' as *;
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: var(--space-3xl) var(--space-xl);
+  max-width: 520px;
+  margin: var(--space-xl) auto;
+
+  &__icon-wrapper {
+    width: 64px;
+    height: 64px;
+    border-radius: var(--radius-full);
+    background-color: var(--color-pale-green);
+    color: var(--color-primary-green);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: var(--space-md);
+    box-shadow: 0 2px 8px rgba(47, 93, 58, 0.12);
+  }
+
+  &__title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--color-main-text);
+    margin-bottom: var(--space-sm);
+  }
+
+  &__description {
+    font-size: 0.9375rem;
+    color: var(--color-muted-text);
+    line-height: 1.5;
+    margin-bottom: var(--space-lg);
+    max-width: 380px;
+  }
+
+  &__action {
+    display: flex;
+    gap: var(--space-sm);
+  }
+}

@@ -1,0 +1,105 @@
+@use '../../tokens' as *;
+
+.dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(24, 52, 32, 0.45);
+  backdrop-filter: blur(2px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: var(--space-md);
+  animation: fadeIn 150ms ease-out;
+}
+
+.dialog-modal {
+  position: relative;
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.15), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  max-width: 480px;
+  width: 100%;
+  padding: var(--space-xl);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  animation: scaleUp 150ms ease-out;
+
+  &__close-btn {
+    position: absolute;
+    top: var(--space-md);
+    right: var(--space-md);
+    background: transparent;
+    border: none;
+    color: var(--color-muted-text);
+    cursor: pointer;
+    padding: 6px;
+    border-radius: var(--radius-sm);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    &:hover {
+      background-color: rgba(0, 0, 0, 0.05);
+      color: var(--color-main-text);
+    }
+  }
+
+  &__header {
+    display: flex;
+    align-items: center;
+    gap: var(--space-md);
+  }
+
+  &__icon-badge {
+    width: 44px;
+    height: 44px;
+    border-radius: var(--radius-full);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+
+    &--primary {
+      background-color: var(--color-pale-green);
+      color: var(--color-primary-green);
+    }
+
+    &--danger {
+      background-color: var(--color-error-bg);
+      color: var(--color-error);
+    }
+  }
+
+  &__title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--color-main-text);
+    margin: 0;
+  }
+
+  &__body {
+    font-size: 0.9375rem;
+    color: var(--color-muted-text);
+    line-height: 1.5;
+  }
+
+  &__footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: var(--space-sm);
+    margin-top: var(--space-sm);
+  }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes scaleUp {
+  from { transform: scale(0.96); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}

@@ -1,0 +1,57 @@
+@use '../../tokens' as *;
+
+.bottom-nav {
+  display: none; // Hidden on desktop
+
+  @media (max-width: 768px) {
+    display: flex;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 60px;
+    background-color: var(--color-surface);
+    border-top: 1px solid var(--color-border);
+    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05);
+    z-index: 900;
+    align-items: center;
+    justify-content: space-around;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  &__item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    color: var(--color-muted-text);
+    padding: 6px 12px;
+    flex: 1;
+    min-width: 0;
+    transition: color #{$transition-fast};
+
+    &--active {
+      color: var(--color-primary-green);
+
+      .bottom-nav__icon {
+        transform: translateY(-1px);
+      }
+
+      .bottom-nav__label {
+        font-weight: 600;
+      }
+    }
+  }
+
+  &__icon {
+    margin-bottom: 2px;
+    transition: transform #{$transition-fast};
+  }
+
+  &__label {
+    font-size: 0.6875rem;
+    line-height: 1;
+    white-space: nowrap;
+  }
+}
