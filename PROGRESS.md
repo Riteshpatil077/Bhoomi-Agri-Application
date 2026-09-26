@@ -511,7 +511,30 @@ All 8 backend modules of the MVP are fully implemented, verified, and passing 92
 - Backend test suite: **92/92 tests passed** with 86% coverage
 - All 7 required UI states (§12.4) verified present across all dashboard sections independently
 
+## Prompt 17 — Responsive & Accessibility Pass ✅
+
+**Completed**: 2026-09-26
+
+### What was verified and improved
+- **§12.5 Accessibility Standards Enforced**:
+  - Minimum touch targets of 44px added to global `.btn` and `.input-field` classes across all screens.
+  - Visible focus rings (`$focus-ring`, 3px teal-green focus highlight) active on all interactive elements.
+  - Labeled status badges verified on every screen: icons + explicit text labels, never color alone (§12.5).
+  - Screen reader attributes (`aria-label`, `aria-busy`, `role="alert"`, `aria-describedby`) verified on alerts, modals, and forms.
+- **Responsive Layout Verification**:
+  - Desktop (>1024px): Full forest-green sticky sidebar with active navigation state, multi-column dashboard, and widescreen card grids.
+  - Tablet (769px–1024px): Collapsed responsive grids, fluid padding, adapted 2-column layouts.
+  - Mobile (<=768px): Seamless transition to fixed 5-destination `<BottomNavigation />` with bottom safe-area clearance (80px), full-width modals, touch-friendly filter chips, and stacked metric cards.
+- **`AppShell` Global Integration**:
+  - Automatically connects to `useAuth()` so farmer identity, verification pill, and sign-out actions are globally reactive without prop duplication.
+- **7-State Completeness Audit (§12.4)**:
+  - Verified that all 12 user-facing screens from Prompts 10–16 explicitly implement all 7 states (Loading, Empty, Success, Validation error, API error, Permission denied, and Unavailable/Stale external data).
+
+### Tests
+- Frontend build & typecheck: **0 errors, 0 warnings** (`tsc -b && vite build` clean, 1953 modules transformed)
+- Backend test suite: **92/92 tests passed** with 86% coverage
+
 ---
 
-_Next: Prompt 17 — Responsive & accessibility pass (mobile, tablet, desktop widths per §12.5; verification of all 7 states from §12.4 across Prompts 10–16)_
+_Next: Prompt 18 — Admin dashboard (`/admin` — Filters, user tables, status badges, verification review screen with presigned GET + mandatory audit reason, strictly permission-gated with honest 403 rendering and all 7 UI states per §12.4)_
 

@@ -90,6 +90,7 @@ h5 { font-size: 1rem; }
   font-size: 0.9375rem;
   font-weight: 500;
   padding: 0.625rem 1.25rem;
+  min-height: 44px;
   border-radius: var(--radius-md);
   cursor: pointer;
   text-decoration: none;
@@ -211,6 +212,7 @@ h5 { font-size: 1rem; }
   border: 1.5px solid var(--color-border);
   border-radius: var(--radius-md);
   padding: 0.625rem 0.875rem;
+  min-height: 44px;
   line-height: 1.5;
   transition: border-color #{$transition-fast}, box-shadow #{$transition-fast};
   appearance: none;

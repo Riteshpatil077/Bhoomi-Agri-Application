@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { Bell, ShieldCheck, User } from "lucide-react";
 import { Sidebar, type UserSummary } from "../Sidebar/Sidebar";
 import { BottomNavigation } from "../BottomNavigation/BottomNavigation";
+import { useAuth } from "../../../context/AuthContext";
 import "./AppShell.scss";
 
 export interface AppShellProps {
@@ -18,11 +19,35 @@ export interface AppShellProps {
  * top header, main content surface, and mobile bottom navigation.
  */
 export const AppShell: React.FC<AppShellProps> = ({
-  user,
+  user: customUser,
   children,
-  onLogout,
+  onLogout: customOnLogout,
   unreadNotificationsCount = 0,
 }) => {
+  const auth = useAuth();
+
+  const user: UserSummary | undefined =
+    customUser ||
+    (auth.user
+      ? {
+          name: auth.user.full_name,
+          phone: auth.user.phone_number,
+          role: (auth.user.platform_role === "super_admin"
+            ? "super_admin"
+            : auth.user.platform_role === "admin"
+            ? "admin"
+            : "farmer") as "farmer" | "admin" | "super_admin",
+          verificationStatus: auth.user.verification_status as
+            | "verified"
+            | "pending"
+            | "rejected"
+            | "unverified"
+            | undefined,
+        }
+      : undefined);
+
+  const onLogout = customOnLogout || auth.logout;
+
   return (
     <div className="app-shell">
       {/* Desktop Sidebar */}
