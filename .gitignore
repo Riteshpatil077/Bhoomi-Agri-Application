@@ -27,6 +27,10 @@ instance/
 !.env.example
 backend/.env
 backend/.env.*
+!backend/.env.example
+frontend/.env
+frontend/.env.*
+!frontend/.env.example
 
 # ── Testing / Coverage ────────────────────────────────────────────────────────
 .pytest_cache/

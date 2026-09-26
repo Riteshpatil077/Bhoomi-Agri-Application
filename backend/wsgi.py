@@ -2,6 +2,10 @@
 Bhoomi backend — WSGI entry point and Celery worker entry point.
 """
 import os
+from dotenv import load_dotenv
+
+# Load local environment variables from .env if present
+load_dotenv()
 
 from app import create_app
 from app.celery_app import make_celery
