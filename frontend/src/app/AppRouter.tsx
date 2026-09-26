@@ -17,6 +17,7 @@ import { CropCycleDetailScreen } from "../screens/crop-cycles/CropCycleDetailScr
 import { ActivitiesScreen } from "../screens/activities/ActivitiesScreen";
 import { WeatherScreen } from "../screens/weather/WeatherScreen";
 import { DashboardScreen } from "../screens/dashboard/DashboardScreen";
+import { AdminDashboardScreen } from "../screens/admin/AdminDashboardScreen";
 import { StyleGuidePage } from "../screens/style-guide/StyleGuidePage";
 
 // ─── Guards ───────────────────────────────────────────────────────────────────
@@ -134,8 +135,8 @@ export function AppRouter() {
           <Route path="/weather" element={<WeatherScreen />} />
           <Route path="/verification" element={<VerificationScreen />} />
           {/* Admin routes — Prompt 18 */}
-          <Route path="/admin" element={<PlaceholderPage title="Admin Dashboard — Prompt 18" />} />
-          <Route path="/admin/*" element={<PlaceholderPage title="Admin — Prompt 18" />} />
+          <Route path="/admin" element={<AdminDashboardScreen />} />
+          <Route path="/admin/*" element={<AdminDashboardScreen />} />
           {/* Super Admin routes — Prompt 19 */}
           <Route path="/super-admin" element={<PlaceholderPage title="Super Admin Panel — Prompt 19" />} />
           <Route path="/super-admin/*" element={<PlaceholderPage title="Super Admin — Prompt 19" />} />

@@ -1,0 +1,357 @@
+// ============================================================================
+// Bhoomi — AdminDashboardScreen SCSS (§12.2 Restrained Administration UI)
+// ============================================================================
+@use "../../design-system/tokens" as *;
+
+.admin-screen {
+  padding: $space-lg $space-xl;
+  max-width: 1280px;
+  margin: 0 auto;
+
+  @media (max-width: 768px) {
+    padding: $space-md;
+  }
+
+  // ── Header ─────────────────────────────────────────────────────────────
+  &__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: $space-lg;
+    gap: $space-md;
+    flex-wrap: wrap;
+    border-bottom: 1px solid $color-border;
+    padding-bottom: $space-md;
+  }
+
+  &__header-text {
+    flex: 1;
+    min-width: 250px;
+  }
+
+  &__title {
+    font-family: $font-heading;
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: $color-main-text;
+    display: flex;
+    align-items: center;
+    gap: $space-sm;
+    margin: 0 0 $space-xs;
+  }
+
+  &__subtitle {
+    color: $color-muted-text;
+    font-size: 0.9rem;
+    margin: 0;
+  }
+
+  &__grants-badge {
+    background: $color-pale-green;
+    border: 1px solid #C7DAC0;
+    padding: $space-xs $space-md;
+    border-radius: $radius-full;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: $color-primary-green;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  // ── Tab Bar ────────────────────────────────────────────────────────────
+  &__tabs {
+    display: flex;
+    gap: $space-xs;
+    border-bottom: 2px solid $color-border;
+    margin-bottom: $space-lg;
+    overflow-x: auto;
+  }
+
+  &__tab-btn {
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid transparent;
+    padding: $space-sm $space-lg;
+    font-family: $font-heading;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: $color-muted-text;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: $space-xs;
+    margin-bottom: -2px;
+    white-space: nowrap;
+    transition: all $transition-fast;
+
+    &:hover {
+      color: $color-main-text;
+    }
+
+    &--active {
+      color: $color-primary-green;
+      border-bottom-color: $color-primary-green;
+    }
+  }
+
+  // ── Filter Toolbar ─────────────────────────────────────────────────────
+  &__toolbar {
+    background: $color-surface;
+    border: 1px solid $color-border;
+    border-radius: $radius-md;
+    padding: $space-sm $space-md;
+    margin-bottom: $space-md;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: $space-md;
+    flex-wrap: wrap;
+  }
+
+  &__toolbar-left {
+    display: flex;
+    align-items: center;
+    gap: $space-sm;
+    flex-wrap: wrap;
+  }
+
+  &__search-input {
+    min-width: 240px;
+    height: 38px;
+    padding: 0 $space-sm;
+    font-size: 0.85rem;
+    border: 1px solid $color-border;
+    border-radius: $radius-sm;
+    background: $color-surface;
+
+    &:focus {
+      outline: none;
+      border-color: $color-primary-green;
+      box-shadow: 0 0 0 2px rgba(47, 93, 58, 0.2);
+    }
+  }
+
+  // ── Tables (§12.2 Restrained & High Contrast) ──────────────────────────
+  &__table-wrapper {
+    background: $color-surface;
+    border: 1px solid $color-border;
+    border-radius: $radius-md;
+    overflow-x: auto;
+    box-shadow: $shadow-sm;
+    margin-bottom: $space-md;
+  }
+
+  &__table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.875rem;
+    text-align: left;
+
+    th {
+      background: #F8FAF6;
+      border-bottom: 2px solid $color-border;
+      padding: $space-sm $space-md;
+      font-weight: 700;
+      color: $color-soil-brown;
+      text-transform: uppercase;
+      font-size: 0.75rem;
+      letter-spacing: 0.05em;
+      white-space: nowrap;
+    }
+
+    td {
+      padding: $space-sm $space-md;
+      border-bottom: 1px solid rgba(216, 223, 210, 0.6);
+      color: $color-main-text;
+      vertical-align: middle;
+    }
+
+    tr:hover td {
+      background: #FAF8F2;
+    }
+  }
+
+  &__pagination {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: $space-md;
+    padding: $space-xs 0;
+    font-size: 0.85rem;
+    color: $color-muted-text;
+    flex-wrap: wrap;
+  }
+
+  // ── Photo Review Modal ─────────────────────────────────────────────────
+  &__photo-viewer {
+    display: flex;
+    flex-direction: column;
+    gap: $space-md;
+    align-items: center;
+
+    &-img {
+      max-width: 100%;
+      max-height: 400px;
+      object-fit: contain;
+      border-radius: $radius-md;
+      border: 1px solid $color-border;
+      background: #000000;
+    }
+
+    &-meta {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.8rem;
+      color: $color-muted-text;
+      border-top: 1px solid $color-border;
+      padding-top: $space-xs;
+    }
+  }
+
+  // ── Audit Note Box (§5, §9) ────────────────────────────────────────────
+  &__audit-notice {
+    background: #FDFBF7;
+    border-left: 3px solid $color-soil-brown;
+    padding: $space-xs $space-sm;
+    font-size: 0.8rem;
+    color: $color-soil-dark;
+    border-radius: 0 $radius-sm $radius-sm 0;
+  }
+
+  // ── Error / Permission Denied Banners ──────────────────────────────────
+  &__alert-box {
+    background: $color-error-bg;
+    border: 1px solid #FDA29B;
+    border-radius: $radius-md;
+    padding: $space-md $space-lg;
+    display: flex;
+    align-items: center;
+    gap: $space-md;
+    color: $color-error;
+    margin-bottom: $space-lg;
+
+    &--warn {
+      background: $color-warning-bg;
+      border-color: #FEDF89;
+      color: $color-warning;
+    }
+
+    &-title {
+      font-weight: 700;
+      margin: 0 0 2px;
+    }
+
+    &-msg {
+      margin: 0;
+      font-size: 0.85rem;
+    }
+  }
+
+  // ── Modal Specifics ────────────────────────────────────────────────────
+  &__modal {
+    position: relative;
+    background-color: $color-surface;
+    border: 1px solid $color-border;
+    border-radius: $radius-xl;
+    box-shadow: $shadow-lg;
+    max-width: 520px;
+    width: 100%;
+    padding: $space-xl;
+    display: flex;
+    flex-direction: column;
+    gap: $space-md;
+
+    &--wide {
+      max-width: 680px;
+    }
+
+    &-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid $color-border;
+      padding-bottom: $space-sm;
+    }
+
+    &-title {
+      font-family: $font-heading;
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: $color-main-text;
+      margin: 0;
+    }
+
+    &-close {
+      background: transparent;
+      border: none;
+      color: $color-muted-text;
+      cursor: pointer;
+      padding: 4px;
+      border-radius: $radius-sm;
+
+      &:hover {
+        color: $color-main-text;
+        background: #ECEFE8;
+      }
+    }
+
+    &-body {
+      display: flex;
+      flex-direction: column;
+      gap: $space-md;
+    }
+
+    &-footer {
+      display: flex;
+      justify-content: flex-end;
+      gap: $space-sm;
+      border-top: 1px solid $color-border;
+      padding-top: $space-md;
+    }
+
+    &-textarea {
+      width: 100%;
+      min-height: 90px;
+      padding: $space-sm;
+      border: 1px solid $color-border;
+      border-radius: $radius-sm;
+      font-family: inherit;
+      font-size: 0.875rem;
+      resize: vertical;
+
+      &:focus {
+        outline: none;
+        border-color: $color-primary-green;
+        box-shadow: 0 0 0 2px rgba(47, 93, 58, 0.15);
+      }
+    }
+
+    &-field-error {
+      color: $color-error;
+      font-size: 0.8rem;
+      margin-top: 2px;
+    }
+  }
+
+  // ── Skeleton Loader ────────────────────────────────────────────────────
+  &__skeleton-row {
+    td {
+      padding: $space-md;
+    }
+
+    .skeleton-bar {
+      height: 16px;
+      background: linear-gradient(90deg, #E6EBE2 25%, #F0F4EC 50%, #E6EBE2 75%);
+      background-size: 200% 100%;
+      animation: skeleton-pulse 1.5s infinite;
+      border-radius: $radius-sm;
+    }
+  }
+}
+
+@keyframes skeleton-pulse {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}

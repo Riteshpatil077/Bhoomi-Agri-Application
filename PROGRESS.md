@@ -536,5 +536,36 @@ All 8 backend modules of the MVP are fully implemented, verified, and passing 92
 
 ---
 
-_Next: Prompt 18 — Admin dashboard (`/admin` — Filters, user tables, status badges, verification review screen with presigned GET + mandatory audit reason, strictly permission-gated with honest 403 rendering and all 7 UI states per §12.4)_
+## Prompt 18 — Admin Dashboard (`/admin`) ✅
+
+**Completed**: 2026-09-26
+
+### What was built
+- `frontend/src/api/admin.ts` — Typed API client for all admin endpoints: `GET /admin/me/permissions`, `GET /admin/users`, `PATCH /admin/users/<id>/deactivate`, `PATCH /admin/users/<id>/activate`, `GET /verification/applications`, `POST /verification/applications/<id>/photos/url`, `POST /verification/applications/<id>/review`.
+- `frontend/src/screens/admin/AdminDashboardScreen.scss` — Restrained §12.2 administration styles: data tables with uppercase column headers, filter toolbar, photo viewer modal, audit notice box, skeleton loader animation, modal layout helpers, error/permission alert banners.
+- `frontend/src/screens/admin/AdminDashboardScreen.tsx` — Full admin portal with:
+  - **Permission pre-check**: calls `GET /admin/me/permissions` on mount; renders honest `Permission Denied (HTTP 403)` if caller is not `admin` or `super_admin` platform role.
+  - **Tab 1 — Verification Applications**: paginated table with status filter (pending/verified/rejected), selfie & land photo view buttons, approve/reject action buttons; Pending badge count shown on tab.
+    - **Photo Audit Modal (§5 & §9)**: mandatory audit-reason textarea (min 5 chars) before a presigned URL is issued; permanent audit trail message; renders purged-document (HTTP 410) state explicitly; displays photo in secure iframe-less `<img>` with expiry counter and open-full-size link.
+    - **Review Modal**: confirm approval or rejection with mandatory rejection reason (min 5 chars).
+    - Per-section gating: `verification_review` grant required; renders honest `Permission Denied (HTTP 403)` from API if missing.
+  - **Tab 2 — User Directory**: paginated table with search (phone/name/email), role filter, active-status filter; activate/deactivate buttons with mandatory audit reason modal (§7); admins cannot deactivate other admin-tier users (UI pre-check mirrors backend rule).
+    - Per-section gating: `user_reports` grant required; renders honest `Permission Denied (HTTP 403)` from API if missing.
+  - **All 7 UI states (§12.4) explicitly implemented** across every section independently:
+    1. Loading — skeleton-bar shimmer rows in both tables
+    2. Empty — `EmptyState` component with contextual icon/description and filter-reset action
+    3. Success — live data rows with `StatusBadge` variants
+    4. Validation error — inline field errors on all modals (photo reason, reject reason, audit reason)
+    5. API/network error — dismissable alert banners with Retry buttons
+    6. Permission denied — honest `Permission Denied (HTTP 403)` banner using the `Lock` icon, rendered when either the overall role check or a per-section grant check fails
+    7. Unavailable/stale data — purged-document HTTP 410 state in photo viewer modal
+- `frontend/src/app/AppRouter.tsx` — `/admin` and `/admin/*` routes wired to `<AdminDashboardScreen />`.
+
+### Tests
+- Frontend build & typecheck: **0 errors** (`tsc -b && vite build` clean, 1956 modules transformed)
+- Backend test suite: **92/92 tests passed** (86% coverage) — no regressions
+
+---
+
+_Next: Prompt 19 — Super Admin control panel (`/super-admin`)_
 
