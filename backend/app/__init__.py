@@ -45,12 +45,20 @@ def create_app(config_name: str | None = None) -> Flask:
     from .blueprints.admin import admin_bp
     from .blueprints.super_admin import super_admin_bp
     from .blueprints.verification import verification_bp
+    from .blueprints.crops import crops_bp
+    from .blueprints.farms import farms_bp
+    from .blueprints.plots import plots_bp
+    from .blueprints.crop_cycles import crop_cycles_bp
 
     app.register_blueprint(health_bp)
     app.register_blueprint(auth_bp, url_prefix="/api/auth")
     app.register_blueprint(admin_bp, url_prefix="/api/admin")
     app.register_blueprint(super_admin_bp, url_prefix="/api/super-admin")
     app.register_blueprint(verification_bp, url_prefix="/api/verification")
+    app.register_blueprint(crops_bp, url_prefix="/api/crops")
+    app.register_blueprint(farms_bp, url_prefix="/api/farms")
+    app.register_blueprint(plots_bp, url_prefix="/api/plots")
+    app.register_blueprint(crop_cycles_bp, url_prefix="/api/crop-cycles")
 
     # ------------------------------------------------------------------ #
     # CLI commands                                                         #

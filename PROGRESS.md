@@ -168,6 +168,40 @@ Updated after every completed, verified module per the Prompt 0 working agreemen
 
 ---
 
-_Next: Prompt 6 — Farms, Plots, Crop Cycles_
+## Prompt 6 — Farms, Plots, Crop Cycles ✅
+
+**Completed**: 2026-09-26
+
+### What was built
+- `backend/app/blueprints/crops/`:
+  - `seeds.py` — Seeding dataset and idempotent seeding function with 18 common agricultural crops (cereals, pulses, oilseeds, cash crops, vegetables, spices) with agronomic durations and categories.
+  - `routes.py` (`GET /api/crops`, `GET /api/crops/<id>`, `POST /api/crops/seed`) — Read-only reference catalog endpoints with category and search query filtering.
+- `backend/app/schemas/farm.py` — Marshmallow validation schemas for `CreateFarmSchema`, `UpdateFarmSchema`, `CreatePlotSchema`, `UpdatePlotSchema`, `CreateCropCycleSchema`, and `UpdateCropCycleSchema`.
+- `backend/app/blueprints/farms/routes.py`:
+  - `GET /api/farms` — Returns caller's farms with dynamically aggregated `plots_count`.
+  - `POST /api/farms` — Provisions new farm belonging exclusively to `current_user.id`.
+  - `GET /api/farms/<id>`, `PATCH /api/farms/<id>`, `DELETE /api/farms/<id>` — Full CRUD with **strict owner-only access controls**; cross-user attempts return 403 Forbidden. Deletion cascades to plots and crop cycles.
+- `backend/app/blueprints/plots/routes.py`:
+  - `GET /api/plots/farm/<farm_id>`, `POST /api/plots/farm/<farm_id>` — Plot management scoped to parent farm with strict owner-only access checks.
+  - `GET /api/plots/<id>`, `PATCH /api/plots/<id>`, `DELETE /api/plots/<id>` — Plot retrieval, update, and deletion; verifies caller owns the parent farm.
+- `backend/app/blueprints/crop_cycles/routes.py`:
+  - `POST /api/crop-cycles/plot/<plot_id>` — Initiates crop cycle; **automatically computes expected harvest date** from crop catalog's `typical_duration_days` if omitted.
+  - `GET /api/crop-cycles/plot/<plot_id>`, `GET /api/crop-cycles` — Lists cycles scoped to plot or aggregated across all farms for the authenticated farmer.
+  - `GET /api/crop-cycles/<id>`, `PATCH /api/crop-cycles/<id>`, `DELETE /api/crop-cycles/<id>` — Cycle detail view, status updates ('active' -> 'harvested' | 'failed', auto-setting `actual_harvest_date`), and deletion.
+- `backend/tests/test_farms.py` — 10 comprehensive tests validating Crop Catalog queries, Farm/Plot/Cycle CRUD, automatic harvest date calculations, cascade deletions, and all 12 cross-user isolation cases (403).
+
+### Tests
+- Backend test suite: **83 passed** (7 scaffolding + 8 models + 13 auth + 28 rbac + 17 verification + 10 farms)
+- Coverage: 85% on backend
+- Frontend build & typecheck: **0 errors**
+
+### Known deferred items (not bugs)
+- Farm activities and reminders — Prompt 7
+- Verified weather / advisory module — Prompt 8
+
+---
+
+_Next: Prompt 7 — Farm Activities & Reminders_
+
 
 
