@@ -1,0 +1,438 @@
+// ============================================================================
+// Bhoomi — WeatherScreen SCSS (Modern Agriculture Skeuomorphism, §8, §12)
+// ============================================================================
+@use "../../design-system/tokens" as *;
+
+.weather-screen {
+  padding: $space-lg $space-xl;
+  max-width: 1100px;
+  margin: 0 auto;
+
+  @media (max-width: 768px) {
+    padding: $space-md;
+  }
+
+  // ── Header ─────────────────────────────────────────────────────────────
+  &__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: $space-lg;
+    gap: $space-md;
+    flex-wrap: wrap;
+  }
+
+  &__header-text {
+    flex: 1;
+    min-width: 250px;
+  }
+
+  &__title {
+    font-family: $font-heading;
+    font-size: 1.875rem;
+    font-weight: 700;
+    color: $color-main-text;
+    display: flex;
+    align-items: center;
+    gap: $space-sm;
+    margin: 0 0 $space-xs;
+  }
+
+  &__subtitle {
+    color: $color-muted-text;
+    font-size: 0.95rem;
+    margin: 0;
+  }
+
+  &__refresh-btn {
+    background: $color-surface;
+    border: 1px solid $color-border;
+    border-radius: $radius-full;
+    padding: 8px 18px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: $color-primary-green;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    box-shadow: $shadow-sm;
+    transition: all $transition-fast;
+
+    &:hover:not(:disabled) {
+      background: $color-pale-green;
+      border-color: $color-primary-green;
+    }
+
+    &:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+  }
+
+  // ── Provenance Banner ──────────────────────────────────────────────────
+  &__provenance-banner {
+    background: #F4F7F2;
+    border: 1px solid #D1DFCA;
+    border-radius: $radius-md;
+    padding: $space-sm $space-md;
+    margin-bottom: $space-lg;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: $space-sm;
+    font-size: 0.85rem;
+    color: $color-muted-text;
+
+    &-left {
+      display: flex;
+      align-items: center;
+      gap: $space-sm;
+      flex-wrap: wrap;
+    }
+
+    &-source {
+      font-weight: 600;
+      color: $color-primary-dark;
+    }
+
+    &-times {
+      display: flex;
+      gap: $space-md;
+      flex-wrap: wrap;
+    }
+  }
+
+  // ── Region Selector Bar ────────────────────────────────────────────────
+  &__regions-bar {
+    display: flex;
+    gap: $space-xs;
+    margin-bottom: $space-lg;
+    overflow-x: auto;
+    padding-bottom: $space-xs;
+    scrollbar-width: thin;
+  }
+
+  &__region-chip {
+    background: $color-surface;
+    border: 1px solid $color-border;
+    border-radius: $radius-full;
+    padding: 6px 16px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: $color-main-text;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all $transition-fast;
+    box-shadow: $shadow-sm;
+
+    &:hover {
+      border-color: $color-primary-green;
+    }
+
+    &--active {
+      background: $color-primary-green;
+      border-color: $color-primary-dark;
+      color: #FFFFFF;
+      box-shadow: $shadow-tactile-btn;
+    }
+  }
+
+  // ── Stale / Expired Data Banner (Mandatory §8 & §12.4) ──────────────────
+  &__stale-banner {
+    background: #FEF0C7;
+    border: 1px solid #FDB022;
+    border-radius: $radius-md;
+    padding: $space-md $space-lg;
+    margin-bottom: $space-lg;
+    display: flex;
+    align-items: center;
+    gap: $space-md;
+    color: #B54708;
+
+    &-icon {
+      font-size: 1.5rem;
+      flex-shrink: 0;
+    }
+
+    &-text {
+      flex: 1;
+    }
+
+    &-title {
+      font-weight: 700;
+      font-size: 0.95rem;
+      margin: 0 0 2px;
+    }
+
+    &-msg {
+      font-size: 0.85rem;
+      margin: 0;
+      opacity: 0.9;
+    }
+  }
+
+  // ── Forecast Hero Card ─────────────────────────────────────────────────
+  &__hero-card {
+    background: linear-gradient(135deg, #FFFFFF 0%, #F5F9F2 100%);
+    border: 1px solid $color-border;
+    border-radius: $radius-lg;
+    box-shadow: $shadow-tactile-card;
+    padding: $space-xl;
+    margin-bottom: $space-xl;
+    display: flex;
+    flex-direction: column;
+    gap: $space-lg;
+    position: relative;
+    overflow: hidden;
+
+    &--stale {
+      border-color: #FDB022;
+      background: linear-gradient(135deg, #FFFDF5 0%, #FEF8E8 100%);
+    }
+
+    &-stale-indicator {
+      position: absolute;
+      top: $space-md;
+      right: $space-md;
+      background: #FEF0C7;
+      border: 1px solid #FDB022;
+      color: #B54708;
+      font-size: 0.75rem;
+      font-weight: 700;
+      padding: 3px 10px;
+      border-radius: $radius-full;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+  }
+
+  &__weather-main {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: $space-xl;
+    flex-wrap: wrap;
+
+    @media (max-width: 640px) {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: $space-lg;
+    }
+  }
+
+  &__temp-block {
+    display: flex;
+    align-items: center;
+    gap: $space-lg;
+  }
+
+  &__weather-icon {
+    font-size: 3.5rem;
+    line-height: 1;
+  }
+
+  &__temp-value {
+    font-family: $font-heading;
+    font-size: 3.5rem;
+    font-weight: 800;
+    color: $color-main-text;
+    line-height: 1;
+  }
+
+  &__condition-text {
+    font-size: 1.15rem;
+    font-weight: 600;
+    color: $color-leaf-green;
+    margin-top: $space-xs;
+  }
+
+  // 4-metrics grid
+  &__metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: $space-md;
+    min-width: 280px;
+
+    @media (max-width: 640px) {
+      width: 100%;
+    }
+  }
+
+  &__metric-item {
+    background: rgba(255, 255, 255, 0.8);
+    border: 1px solid rgba(216, 223, 210, 0.6);
+    border-radius: $radius-md;
+    padding: $space-sm $space-md;
+    display: flex;
+    align-items: center;
+    gap: $space-sm;
+
+    &-icon {
+      color: $color-primary-green;
+    }
+
+    &-info {
+      display: flex;
+      flex-direction: column;
+    }
+
+    &-label {
+      font-size: 0.75rem;
+      color: $color-muted-text;
+      text-transform: uppercase;
+      font-weight: 600;
+    }
+
+    &-value {
+      font-family: $font-heading;
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: $color-main-text;
+    }
+  }
+
+  // Agronomic advisory box on hero card
+  &__agri-advice {
+    background: #FAF8F2;
+    border-left: 4px solid $color-primary-green;
+    border-radius: 0 $radius-md $radius-md 0;
+    padding: $space-md $space-lg;
+    display: flex;
+    align-items: flex-start;
+    gap: $space-sm;
+
+    &-icon {
+      font-size: 1.3rem;
+      flex-shrink: 0;
+    }
+
+    &-title {
+      font-weight: 700;
+      font-size: 0.9rem;
+      color: $color-soil-brown;
+      margin: 0 0 2px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    &-body {
+      margin: 0;
+      font-size: 0.95rem;
+      color: $color-main-text;
+      line-height: 1.5;
+    }
+  }
+
+  // ── Advisories Section ─────────────────────────────────────────────────
+  &__advisories-section {
+    display: flex;
+    flex-direction: column;
+    gap: $space-md;
+  }
+
+  &__advisories-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: $space-sm;
+  }
+
+  &__advisories-title {
+    font-family: $font-heading;
+    font-size: 1.35rem;
+    font-weight: 700;
+    color: $color-main-text;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: $space-sm;
+  }
+
+  &__advisories-count {
+    background: $color-pale-green;
+    color: $color-primary-green;
+    font-size: 0.8rem;
+    padding: 2px 10px;
+    border-radius: $radius-full;
+    font-weight: 700;
+  }
+
+  &__advisories-grid {
+    display: flex;
+    flex-direction: column;
+    gap: $space-md;
+  }
+
+  // ── Skeletons ──────────────────────────────────────────────────────────
+  &__skeleton {
+    &-hero {
+      height: 240px;
+      background: #E8E5DD;
+      border-radius: $radius-lg;
+      margin-bottom: $space-xl;
+      animation: weather-pulse 1.4s infinite ease-in-out;
+    }
+
+    &-card {
+      height: 120px;
+      background: $color-surface;
+      border: 1px solid $color-border;
+      border-radius: $radius-md;
+      margin-bottom: $space-md;
+      animation: weather-pulse 1.4s infinite ease-in-out;
+    }
+  }
+
+  // ── Alerts (Errors / Permission / Unavailable) ────────────────────────
+  &__banner {
+    display: flex;
+    align-items: center;
+    gap: $space-md;
+    padding: $space-md $space-lg;
+    border-radius: $radius-md;
+    margin-bottom: $space-lg;
+
+    &--error {
+      background: $color-error-bg;
+      border: 1px solid #FDA29B;
+      color: $color-error;
+    }
+
+    &--warn {
+      background: $color-warning-bg;
+      border: 1px solid #FEDF89;
+      color: $color-warning;
+    }
+
+    &-title {
+      font-weight: 700;
+      margin: 0 0 2px;
+    }
+
+    &-msg {
+      margin: 0;
+      font-size: 0.9rem;
+      opacity: 0.9;
+    }
+
+    &-retry {
+      margin-left: auto;
+      background: $color-surface;
+      border: 1px solid currentColor;
+      color: inherit;
+      padding: 6px 14px;
+      border-radius: $radius-sm;
+      font-weight: 600;
+      cursor: pointer;
+    }
+  }
+}
+
+@keyframes weather-pulse {
+  0% { opacity: 0.6; }
+  50% { opacity: 1; }
+  100% { opacity: 0.6; }
+}

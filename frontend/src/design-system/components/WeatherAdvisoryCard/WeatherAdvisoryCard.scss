@@ -1,0 +1,168 @@
+// ============================================================================
+// Bhoomi — WeatherAdvisoryCard Component SCSS (§12.1–§12.3)
+// ============================================================================
+@use "../../tokens" as *;
+
+.weather-advisory-card {
+  background: $color-surface;
+  border: 1px solid $color-border;
+  border-radius: $radius-md;
+  box-shadow: $shadow-tactile-card;
+  padding: $space-md $space-lg;
+  display: flex;
+  flex-direction: column;
+  gap: $space-sm;
+  transition: all $transition-fast;
+  position: relative;
+  overflow: hidden;
+
+  &::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    background: $color-leaf-green;
+  }
+
+  &--high {
+    border-color: #FECDCA;
+    &::before {
+      background: $color-error;
+    }
+  }
+
+  &--medium {
+    border-color: #FEDF89;
+    &::before {
+      background: $color-warning;
+    }
+  }
+
+  &--low {
+    border-color: #B2DDFF;
+    &::before {
+      background: $color-info;
+    }
+  }
+
+  &--expired {
+    opacity: 0.75;
+    background: #FAFAFA;
+  }
+
+  &:hover {
+    box-shadow: $shadow-md;
+    transform: translateY(-1px);
+  }
+
+  &__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: $space-sm;
+    flex-wrap: wrap;
+  }
+
+  &__title-group {
+    display: flex;
+    align-items: center;
+    gap: $space-sm;
+    flex: 1;
+    min-width: 200px;
+  }
+
+  &__icon {
+    font-size: 1.25rem;
+  }
+
+  &__title {
+    font-family: $font-heading;
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: $color-main-text;
+    margin: 0;
+  }
+
+  &__badges {
+    display: flex;
+    align-items: center;
+    gap: $space-xs;
+  }
+
+  &__severity-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 8px;
+    border-radius: $radius-full;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+
+    &--high {
+      background: $color-error-bg;
+      color: $color-error;
+      border: 1px solid #FDA29B;
+    }
+
+    &--medium {
+      background: $color-warning-bg;
+      color: $color-warning;
+      border: 1px solid #FEDF89;
+    }
+
+    &--low {
+      background: $color-info-bg;
+      color: $color-info;
+      border: 1px solid #B2DDFF;
+    }
+  }
+
+  &__action-box {
+    background: #FDFBF7;
+    border: 1px dashed $color-border;
+    border-radius: $radius-sm;
+    padding: $space-sm $space-md;
+    font-size: 0.9rem;
+    color: $color-main-text;
+    line-height: 1.5;
+
+    &-label {
+      font-weight: 600;
+      color: $color-soil-brown;
+      display: block;
+      margin-bottom: 2px;
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+  }
+
+  &__footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: $space-sm;
+    font-size: 0.8rem;
+    color: $color-muted-text;
+    border-top: 1px solid rgba(216, 223, 210, 0.6);
+    padding-top: $space-xs;
+    flex-wrap: wrap;
+  }
+
+  &__source {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-weight: 500;
+  }
+
+  &__validity {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+}

@@ -444,7 +444,44 @@ All 8 backend modules of the MVP are fully implemented, verified, and passing 92
 - Backend test suite: **4/4 activity tests passed** (92/92 overall backend tests pass)
 - All 7 required UI states (§12.4) verified present
 
+## Prompt 15 — Weather & Agronomic Advisory Screens ✅
+
+**Completed**: 2026-09-26
+
+### What was built
+- `frontend/src/api/weather.ts` — Typed weather & advisories API client:
+  - `fetchForecast(params)`, `fetchAdvisories(params)`
+  - Full data structures for `WeatherPayload`, `WeatherProvenance`, `ForecastResponse`, and `AdvisoriesResponse`
+- `frontend/src/design-system/components/WeatherAdvisoryCard/` — Dedicated advisory card component (§8, §12.2, §12.5):
+  - Labeled severity badge (High, Medium, Low — never color alone per §12.5) with severity icons
+  - Title, recommended agronomic action box, source provenance attribution, validity timestamp, and active/expired state
+  - Exported through `frontend/src/design-system/index.ts`
+- `frontend/src/screens/weather/WeatherScreen.scss` — Skeuomorphic layout (§12.1–§12.3):
+  - Gradient hero forecast card, 4-metric grid (humidity, precipitation, wind speed, UV index), tactile region preset chips, and agronomic advice banner
+  - Provenance strip with Official IMD feed badge, update timestamps, and validity windows
+  - Prominent amber stale-data warning banner per §8
+- `frontend/src/screens/weather/WeatherScreen.tsx` — Weather & agronomic advisory screen:
+  - Presets for major agricultural belts (Pune, Nashik, Nagpur, Chh. Sambhajinagar, Kolhapur, Solapur)
+  - Hero current weather card with dynamic condition emoji and 4-metric grid
+  - Hyperlocal agronomic advice box
+  - Regional pest & crop alert list using `<WeatherAdvisoryCard />` with severity filter tabs
+  - Manual feed refresh button with loading indicator
+  - **Explicit Implementation of all 7 UI States (§12.4)**:
+    1. Loading — Skeleton shimmers for hero card and advisory cards
+    2. Empty — EmptyState with Cloud icon when no regional alerts are active
+    3. Success — Verified weather forecast with provenance metadata and advisory cards
+    4. Validation error — Preset and region query validation
+    5. API error — Inline retry banner with retry button
+    6. Permission denied — 403 access restriction guard
+    7. Unavailable / Stale external data (**MANDATORY per §8 & §12.4**) — Prominent alert: *"Data unavailable, last known good at [timestamp]. Bhoomi never fabricates synthetic weather data during upstream provider downtime."* with STALE DATA pill on hero card and retry affordance
+- `frontend/src/app/AppRouter.tsx` — Wired `/weather` route to `<WeatherScreen />`
+
+### Tests
+- Frontend build & typecheck: **0 errors, 0 warnings** (`tsc -b && vite build` clean, 1951 modules transformed)
+- Backend test suite: **5/5 weather tests passed** (92/92 overall backend tests pass)
+- All 7 required UI states (§12.4) verified present
+
 ---
 
-_Next: Prompt 15 — Weather/advisory screens (`/weather` — `WeatherAdvisoryCard` per §8 and §12.2 with mandatory unavailable/stale-data states per §12.4)_
+_Next: Prompt 16 — Farmer dashboard (`/dashboard` — Assembled per §12.2 hierarchy with no invented crop counts, weather, or stats; all 7 states per §12.4 implemented across every section independently)_
 

@@ -15,6 +15,7 @@ import { PlotDetailsScreen } from "../screens/farms/PlotDetailsScreen";
 import { CropCyclesScreen } from "../screens/crop-cycles/CropCyclesScreen";
 import { CropCycleDetailScreen } from "../screens/crop-cycles/CropCycleDetailScreen";
 import { ActivitiesScreen } from "../screens/activities/ActivitiesScreen";
+import { WeatherScreen } from "../screens/weather/WeatherScreen";
 import { StyleGuidePage } from "../screens/style-guide/StyleGuidePage";
 
 // ─── Guards ───────────────────────────────────────────────────────────────────
@@ -129,7 +130,7 @@ export function AppRouter() {
           <Route path="/crop-cycles" element={<CropCyclesScreen />} />
           <Route path="/crop-cycles/:cycleId" element={<CropCycleDetailScreen />} />
           <Route path="/activities" element={<ActivitiesScreen />} />
-          <Route path="/weather" element={<PlaceholderPage title="Weather — Prompt 15" />} />
+          <Route path="/weather" element={<WeatherScreen />} />
           <Route path="/verification" element={<VerificationScreen />} />
           {/* Admin routes — Prompt 18 */}
           <Route path="/admin" element={<PlaceholderPage title="Admin Dashboard — Prompt 18" />} />

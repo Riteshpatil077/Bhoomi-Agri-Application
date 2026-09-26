@@ -14,3 +14,4 @@ export * from "./components/AppShell/AppShell";
 export * from "./components/FarmCard/FarmCard";
 export * from "./components/PlotCard/PlotCard";
 export * from "./components/CropCycleCard/CropCycleCard";
+export * from "./components/WeatherAdvisoryCard/WeatherAdvisoryCard";
