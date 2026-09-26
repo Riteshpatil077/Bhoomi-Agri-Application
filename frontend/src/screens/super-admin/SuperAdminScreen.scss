@@ -1,0 +1,387 @@
+// ============================================================================
+// Bhoomi — SuperAdminScreen SCSS (§12.2 Visually Distinct Super Admin Panel)
+// ============================================================================
+@use "../../design-system/tokens" as *;
+
+// ── Visually distinct identity strip at the top ──────────────────────────────
+.super-admin-badge {
+  background: linear-gradient(135deg, #1A2E20 0%, #2F5D3A 100%);
+  color: rgba(255, 255, 255, 0.9);
+  padding: $space-xs $space-lg;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  gap: $space-sm;
+  border-bottom: 2px solid #79563D;
+}
+
+// ── Main screen wrapper ───────────────────────────────────────────────────────
+.sa-screen {
+  padding: $space-lg $space-xl;
+  max-width: 1320px;
+  margin: 0 auto;
+
+  @media (max-width: 768px) {
+    padding: $space-md;
+  }
+
+  // ── Header ──────────────────────────────────────────────────────────────
+  &__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: $space-lg;
+    gap: $space-md;
+    flex-wrap: wrap;
+    border-bottom: 2px solid #B8C9B0;
+    padding-bottom: $space-md;
+  }
+
+  &__title {
+    font-family: $font-heading;
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: $color-main-text;
+    margin: 0 0 $space-xs;
+    display: flex;
+    align-items: center;
+    gap: $space-sm;
+  }
+
+  &__subtitle {
+    color: $color-muted-text;
+    font-size: 0.9rem;
+    margin: 0;
+  }
+
+  // ── Tab bar ─────────────────────────────────────────────────────────────
+  &__tabs {
+    display: flex;
+    gap: $space-xs;
+    border-bottom: 2px solid $color-border;
+    margin-bottom: $space-lg;
+    overflow-x: auto;
+  }
+
+  &__tab-btn {
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid transparent;
+    padding: $space-sm $space-lg;
+    font-family: $font-heading;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: $color-muted-text;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: $space-xs;
+    margin-bottom: -2px;
+    white-space: nowrap;
+    transition: all $transition-fast;
+
+    &:hover {
+      color: $color-main-text;
+    }
+
+    &--active {
+      color: $color-primary-green;
+      border-bottom-color: $color-primary-green;
+    }
+  }
+
+  // ── Toolbar ─────────────────────────────────────────────────────────────
+  &__toolbar {
+    background: $color-surface;
+    border: 1px solid $color-border;
+    border-radius: $radius-md;
+    padding: $space-sm $space-md;
+    margin-bottom: $space-md;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: $space-md;
+    flex-wrap: wrap;
+  }
+
+  &__toolbar-left {
+    display: flex;
+    align-items: center;
+    gap: $space-sm;
+    flex-wrap: wrap;
+  }
+
+  // ── Data tables ─────────────────────────────────────────────────────────
+  &__table-wrapper {
+    background: $color-surface;
+    border: 1px solid $color-border;
+    border-radius: $radius-md;
+    overflow-x: auto;
+    box-shadow: $shadow-sm;
+    margin-bottom: $space-md;
+  }
+
+  &__table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.875rem;
+    text-align: left;
+
+    th {
+      background: #F0F4EC;
+      border-bottom: 2px solid $color-border;
+      padding: $space-sm $space-md;
+      font-weight: 700;
+      color: #1A2E20;
+      text-transform: uppercase;
+      font-size: 0.75rem;
+      letter-spacing: 0.05em;
+      white-space: nowrap;
+    }
+
+    td {
+      padding: $space-sm $space-md;
+      border-bottom: 1px solid rgba(216, 223, 210, 0.6);
+      color: $color-main-text;
+      vertical-align: middle;
+    }
+
+    tr:hover td {
+      background: #FAFCF8;
+    }
+  }
+
+  // ── Pagination ───────────────────────────────────────────────────────────
+  &__pagination {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: $space-md;
+    padding: $space-xs 0;
+    font-size: 0.85rem;
+    color: $color-muted-text;
+    flex-wrap: wrap;
+  }
+
+  // ── Permission Tags ───────────────────────────────────────────────────────
+  &__perm-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: $color-pale-green;
+    border: 1px solid #C7DAC0;
+    border-radius: $radius-full;
+    padding: 2px 10px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: $color-primary-green;
+    margin: 2px;
+
+    &--revoked {
+      background: #FEF3F2;
+      border-color: #FDA29B;
+      color: $color-error;
+      text-decoration: line-through;
+      opacity: 0.7;
+    }
+
+    button {
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      padding: 0;
+      display: flex;
+      align-items: center;
+      color: inherit;
+      opacity: 0.6;
+
+      &:hover {
+        opacity: 1;
+      }
+    }
+  }
+
+  // ── Alert boxes ──────────────────────────────────────────────────────────
+  &__alert-box {
+    background: $color-error-bg;
+    border: 1px solid #FDA29B;
+    border-radius: $radius-md;
+    padding: $space-md $space-lg;
+    display: flex;
+    align-items: center;
+    gap: $space-md;
+    color: $color-error;
+    margin-bottom: $space-lg;
+
+    &-title {
+      font-weight: 700;
+      margin: 0 0 2px;
+    }
+
+    &-msg {
+      margin: 0;
+      font-size: 0.85rem;
+    }
+  }
+
+  // ── Audit log rows ────────────────────────────────────────────────────────
+  &__audit-action {
+    font-family: "Courier New", monospace;
+    font-size: 0.8rem;
+    background: #F0F4EC;
+    padding: 2px 6px;
+    border-radius: $radius-sm;
+    color: $color-primary-green;
+  }
+
+  &__audit-meta {
+    font-size: 0.75rem;
+    color: $color-muted-text;
+    max-width: 300px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  // ── Skeleton ────────────────────────────────────────────────────────────
+  &__skeleton-bar {
+    height: 16px;
+    background: linear-gradient(90deg, #E6EBE2 25%, #F0F4EC 50%, #E6EBE2 75%);
+    background-size: 200% 100%;
+    animation: sa-skeleton-pulse 1.5s infinite;
+    border-radius: $radius-sm;
+  }
+
+  // ── Modal ────────────────────────────────────────────────────────────────
+  &__modal {
+    position: relative;
+    background-color: $color-surface;
+    border: 1px solid $color-border;
+    border-radius: $radius-xl;
+    box-shadow: $shadow-lg;
+    max-width: 560px;
+    width: 100%;
+    padding: $space-xl;
+    display: flex;
+    flex-direction: column;
+    gap: $space-md;
+
+    &-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid $color-border;
+      padding-bottom: $space-sm;
+    }
+
+    &-title {
+      font-family: $font-heading;
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: $color-main-text;
+      margin: 0;
+    }
+
+    &-close {
+      background: transparent;
+      border: none;
+      color: $color-muted-text;
+      cursor: pointer;
+      padding: 4px;
+      border-radius: $radius-sm;
+
+      &:hover {
+        color: $color-main-text;
+        background: #ECEFE8;
+      }
+    }
+
+    &-body {
+      display: flex;
+      flex-direction: column;
+      gap: $space-md;
+    }
+
+    &-footer {
+      display: flex;
+      justify-content: flex-end;
+      gap: $space-sm;
+      border-top: 1px solid $color-border;
+      padding-top: $space-md;
+    }
+  }
+
+  // ── Step-up notice ────────────────────────────────────────────────────────
+  &__stepup-notice {
+    background: #FFFBF0;
+    border-left: 3px solid $color-soil-brown;
+    padding: $space-xs $space-sm;
+    font-size: 0.8rem;
+    color: $color-soil-dark;
+    border-radius: 0 $radius-sm $radius-sm 0;
+  }
+
+  // ── Input helpers ─────────────────────────────────────────────────────────
+  &__field-error {
+    color: $color-error;
+    font-size: 0.8rem;
+    margin-top: 2px;
+  }
+
+  &__label {
+    font-weight: 600;
+    font-size: 0.85rem;
+    display: block;
+    margin-bottom: 4px;
+    color: $color-main-text;
+  }
+
+  &__required {
+    color: $color-error;
+  }
+
+  // ── Sections for permissions panel ────────────────────────────────────────
+  &__perm-section {
+    background: $color-surface;
+    border: 1px solid $color-border;
+    border-radius: $radius-md;
+    padding: $space-md;
+    margin-bottom: $space-md;
+
+    h4 {
+      font-family: $font-heading;
+      font-size: 1rem;
+      font-weight: 700;
+      color: $color-main-text;
+      margin: 0 0 $space-sm;
+      display: flex;
+      align-items: center;
+      gap: $space-xs;
+    }
+  }
+
+  // ── Audit filters ─────────────────────────────────────────────────────────
+  &__search-input {
+    min-width: 200px;
+    height: 38px;
+    padding: 0 $space-sm;
+    font-size: 0.85rem;
+    border: 1px solid $color-border;
+    border-radius: $radius-sm;
+    background: $color-surface;
+
+    &:focus {
+      outline: none;
+      border-color: $color-primary-green;
+      box-shadow: 0 0 0 2px rgba(47, 93, 58, 0.2);
+    }
+  }
+}
+
+@keyframes sa-skeleton-pulse {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}

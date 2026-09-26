@@ -567,5 +567,40 @@ All 8 backend modules of the MVP are fully implemented, verified, and passing 92
 
 ---
 
-_Next: Prompt 19 — Super Admin control panel (`/super-admin`)_
+## Prompt 19 — Super Admin Control Panel (`/super-admin`) ✅
+
+**Completed**: 2026-09-26
+
+### What was built
+- `frontend/src/api/superAdmin.ts` — Typed API client for all super-admin endpoints:
+  - `GET /super-admin/admins` — list admin-tier accounts
+  - `POST /super-admin/admins` — create admin/super_admin with step-up password in body (§6/§7.6)
+  - `PATCH /super-admin/admins/<id>/deactivate|activate` — with audit reason
+  - `GET /super-admin/admins/<id>/permissions` — list grants (active + history)
+  - `POST /super-admin/admins/<id>/permissions` — grant a permission key
+  - `DELETE /super-admin/admins/<id>/permissions/<key>` — revoke a permission
+  - `GET /super-admin/audit-logs` — paginated with action/resource_type/actor filters
+- `frontend/src/screens/super-admin/SuperAdminScreen.scss` — Visually distinct from `/admin` per §12.2:
+  - Deep forest-green gradient identity strip ("Super Admin Control Panel") at top — unambiguous role indicator so panel is never mistaken for regular Admin view
+  - Permission chip tags (green for active, struck-through red for revoked) with toggle grant/revoke buttons
+  - Audit log with monospace action codes, resource references, and reason column
+  - Step-up authentication notice box (amber left-border) per §6/§7.6
+- `frontend/src/screens/super-admin/SuperAdminScreen.tsx` — Full Super Admin panel with 3 tabs:
+  - **Tab 1 — Admin Accounts**: Paginated table of all admin/super_admin users with create button; activate/deactivate with mandatory audit reason modal (§7); cannot deactivate self (UI + API enforcement).
+    - **Create Admin Modal (Step-up re-auth §6/§7.6)**: form with full_name, phone, email (optional), account password, platform_role selector (admin/super_admin), and a mandatory `step_up_password` field sent in body to `POST /super-admin/admins` — server enforces the re-auth via `@require_step_up_auth` decorator.
+  - **Tab 2 — Permission Grants**: Split layout — admin selector list on left, permission management panel on right.
+    - Toggle chips for all 4 standard permissions (`verification_review`, `content_moderation`, `user_reports`, `audit_log_view`)
+    - Full grant history table showing granted/revoked timestamps
+  - **Tab 3 — Audit Log**: Paginated audit events with action filter, resource_type filter; shows actor_user_id, action code, resource, reason column.
+  - **State 6 — Permission Denied**: Honest `Permission Denied (HTTP 403)` with `Lock` icon shown if `user.platform_role !== "super_admin"` — the API would reject anyway; UI reflects it truthfully.
+  - **All 7 UI states (§12.4) explicitly implemented** across all three tabs independently.
+- `frontend/src/app/AppRouter.tsx` — `/super-admin` and `/super-admin/*` routes wired to `<SuperAdminScreen />`.
+
+### Tests
+- Frontend build & typecheck: **0 errors** (`tsc -b && vite build` clean, 1959 modules transformed)
+- Backend test suite: **92/92 tests passed** (86% coverage) — no regressions
+
+---
+
+_Next: Prompt 20 — Final security pass + CI_
 
