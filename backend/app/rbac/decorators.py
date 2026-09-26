@@ -69,24 +69,18 @@ def platform_role_required(*roles: str) -> Callable:
     return decorator
 
 
-def permission_required(permission_key: str) -> Callable:
+def permission_required(permission_key: str, allow_super_admin_bypass: bool = True) -> Callable:
     """
     Decorator that checks for an **active** ``AdminPermissionGrant`` row.
 
-    Super Admins bypass the grant check (they have all permissions implicitly).
-    Regular Admins require an active (non-revoked) grant for *permission_key*.
+    Super Admins bypass the grant check for standard permissions if
+    allow_super_admin_bypass is True.
+    For sensitive operations like verification review (§5, §7.4),
+    allow_super_admin_bypass=False enforces that Super Admins also require
+    an explicit active grant.
     Users always receive 403.
 
     Must be applied AFTER ``@jwt_required()`` and ``@platform_role_required("admin", "super_admin")``.
-
-    Usage::
-
-        @bp.route("/admin/verifications")
-        @jwt_required()
-        @platform_role_required("admin", "super_admin")
-        @permission_required("verification_review")
-        def review_verifications():
-            ...
     """
     def decorator(fn: Callable) -> Callable:
         @wraps(fn)
@@ -106,12 +100,12 @@ def permission_required(permission_key: str) -> Callable:
                     "message": "A valid session is required.",
                 }), 401
 
-            # Super Admins bypass permission grants
-            if user.platform_role == "super_admin":
+            # Super Admins bypass permission grants if allowed
+            if user.platform_role == "super_admin" and allow_super_admin_bypass:
                 return fn(*args, **kwargs)
 
-            # Regular admins need an active grant
-            if user.platform_role != "admin":
+            # Both Admin and Super Admin (when bypass is disallowed) can hold grants
+            if user.platform_role not in ("admin", "super_admin"):
                 return jsonify({
                     "error": "forbidden",
                     "message": "Admin or Super Admin role required.",
@@ -139,3 +133,43 @@ def permission_required(permission_key: str) -> Callable:
             return fn(*args, **kwargs)
         return wrapper
     return decorator
+
+
+def verified_farmer_required(fn: Callable) -> Callable:
+    """
+    Decorator requiring the caller to be a verified farmer.
+    Returns 401 if unauthenticated, 403 if not farmer or unverified.
+    Per §7 & Prompt 5: unverified user blocked from farmer-only endpoints.
+    """
+    @wraps(fn)
+    def wrapper(*args: Any, **kwargs: Any) -> Any:
+        try:
+            verify_jwt_in_request()
+        except Exception:
+            return jsonify({
+                "error": "authentication_required",
+                "message": "A valid session is required.",
+            }), 401
+
+        user = current_user
+        if user is None or not user.is_active:
+            return jsonify({
+                "error": "authentication_required",
+                "message": "A valid session is required.",
+            }), 401
+
+        if user.user_type != "farmer":
+            return jsonify({
+                "error": "forbidden",
+                "message": "Farmer account required.",
+            }), 403
+
+        if user.verification_status != "verified":
+            return jsonify({
+                "error": "verification_required",
+                "message": "Verified farmer status is required to access this resource.",
+                "verification_status": user.verification_status,
+            }), 403
+
+        return fn(*args, **kwargs)
+    return wrapper

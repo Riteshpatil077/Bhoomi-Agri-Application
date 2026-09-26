@@ -127,5 +127,47 @@ Updated after every completed, verified module per the Prompt 0 working agreemen
 
 ---
 
-_Next: Prompt 5 — Farmer Verification Module_
+## Prompt 5 — Farmer Verification Module ✅
+
+**Completed**: 2026-09-26
+
+### What was built
+- `backend/app/utils/storage.py` — Strictly separated storage abstractions per §5:
+  - `PrivateVerificationStorage` — Operates against `S3_BUCKET_PRIVATE` (`bhoomi-verification-private`), generates restricted presigned PUT upload URLs (validating MIME types and 10MB size limits), generates short-lived (5 min) presigned GET download URLs for reviewers, and deletes objects on purge.
+  - `PublicMediaStorage` — Operates against `S3_BUCKET_PUBLIC` (`bhoomi-public-media`) for profile and catalog photos; completely decoupled from verification documents.
+- `backend/app/schemas/verification.py` — Marshmallow validation schemas:
+  - `UploadUrlRequestSchema` — Validates `photo_type` ('selfie' | 'land'), MIME types (`image/jpeg`, `image/png`, `image/webp`), and file size limits (<= 10MB).
+  - `SubmitVerificationSchema` — Validates submitted object keys.
+  - `ViewPhotoRequestSchema` — Validates required non-empty `reason` string (min 5 characters) for audit trail.
+  - `ReviewVerificationSchema` — Validates review decision ('verified' | 'rejected') and enforces mandatory rejection reason.
+- `backend/app/blueprints/verification/routes.py`:
+  - `POST /api/verification/upload-url` — Direct-to-S3 presigned upload URL generator; rate-limited (20/min).
+  - `POST /api/verification/submit` — Submits selfie & land photo keys, enforces user-scoped prefix ownership (`verifications/{user_id}/`), creates pending `FarmerVerification` record, and updates `user.verification_status` to `'pending'`.
+  - `GET /api/verification/status` — Returns caller's latest verification status.
+  - `GET /api/verification/applications` — Paginated reviewer list of applications; gated by `@permission_required('verification_review', allow_super_admin_bypass=False)` (presigned URLs are never included in listings per §5).
+  - `POST /api/verification/applications/<id>/photos/url` — Generates 5-minute presigned GET URL; **mandatory audit logging** with `reason`, actor, target user, and document key; applies to both Admins and Super Admins. Returns 410 if photo was purged.
+  - `POST /api/verification/applications/<id>/review` — Reviewer approves/rejects application, updates applicant `verification_status`, logs action, and schedules `docs_purge_at` retention date.
+  - `GET /api/verification/farmer-only-test` — Verification-gated endpoint demonstrating that unverified users receive 403 `verification_required`.
+- `backend/app/rbac/decorators.py`:
+  - Added `allow_super_admin_bypass=False` support to `@permission_required` so Super Admins also require an explicit grant to view verification documents per §5 & §7.4.
+  - Added `@verified_farmer_required` decorator enforcing `user_type == 'farmer'` and `verification_status == 'verified'`.
+- `backend/app/tasks/verification.py`:
+  - `purge_expired_verification_docs` Celery task — Purges photos from private S3 bucket and sets keys to `'[PURGED]'` when `docs_purge_at <= utc_now()`, creating audit log rows for the purge.
+- `backend/app/celery_app.py`:
+  - Added Celery beat schedule entry for hourly verification retention purge.
+- `backend/tests/test_verification.py` — 17 comprehensive tests verifying all Prompt 5 criteria.
+
+### Tests
+- Backend test suite: **73 passed** (7 scaffolding + 8 models + 13 auth + 28 rbac + 17 verification)
+- Coverage: 83% on backend
+- Frontend build & typecheck: **0 errors**
+
+### Known deferred items (not bugs)
+- Farms, plots, and crop cycles CRUD — Prompt 6
+- Farm activities and reminders — Prompt 7
+
+---
+
+_Next: Prompt 6 — Farms, Plots, Crop Cycles_
+
 

@@ -44,11 +44,13 @@ def create_app(config_name: str | None = None) -> Flask:
     from .blueprints.auth import auth_bp
     from .blueprints.admin import admin_bp
     from .blueprints.super_admin import super_admin_bp
+    from .blueprints.verification import verification_bp
 
     app.register_blueprint(health_bp)
     app.register_blueprint(auth_bp, url_prefix="/api/auth")
     app.register_blueprint(admin_bp, url_prefix="/api/admin")
     app.register_blueprint(super_admin_bp, url_prefix="/api/super-admin")
+    app.register_blueprint(verification_bp, url_prefix="/api/verification")
 
     # ------------------------------------------------------------------ #
     # CLI commands                                                         #
