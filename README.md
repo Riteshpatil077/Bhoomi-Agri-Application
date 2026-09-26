@@ -55,9 +55,13 @@ bhoomi/
 └── .github/          # CI/CD workflows
 ```
 
+## Documentation
+
+For a comprehensive technical deep-dive into the platform architecture, database schemas, security models, Celery background jobs, modern agriculture skeuomorphism design system, and complete API specifications, see **[PROJECT_DOCUMENTATION.md](./PROJECT_DOCUMENTATION.md)**.
+
 ## Build Progress
 
-See [PROGRESS.md](./PROGRESS.md) for module-by-module build status.
+See [PROGRESS.md](./PROGRESS.md) for module-by-module build status across all 20 prompts.
 
 ## License
 
