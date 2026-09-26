@@ -368,5 +368,83 @@ All 8 backend modules of the MVP are fully implemented, verified, and passing 92
 
 ---
 
-_Next: Prompt 12 — Farm & Plot screens (`My Farms → Farm details → Plots` using `FarmCard`/`PlotCard`)_
+## Prompt 12 — Farm & Plot Screens ✅
+
+**Completed**: 2026-09-26
+
+### What was built
+- `frontend/src/api/farms.ts` — Typed API layer for farms and plots:
+  - `fetchFarms()`, `fetchFarm(id)`, `createFarm(payload)`, `updateFarm(id, payload)`, `deleteFarm(id)`
+  - `fetchPlotsForFarm(farmId)`, `fetchPlot(plotId)`, `createPlot(farmId, payload)`, `updatePlot(plotId, payload)`, `deletePlot(plotId)`
+  - CSRF header injection via `csrfHeaders()` on all mutations
+- `frontend/src/design-system/components/FarmCard/` — Skeuomorphic farm card with soil-toned border, crop icon, location, acre badge, plots counter, and click navigation
+- `frontend/src/design-system/components/PlotCard/` — Skeuomorphic plot card with plot name, acreage, active crop cycle indicators, and edit/delete actions
+- `frontend/src/screens/farms/farms.scss` — Modern Agriculture Skeuomorphism styling (§12.1–§12.3) for farms screens, summary stat ribbons, plot grids, action dialogs, and modals
+- `frontend/src/screens/farms/MyFarmsScreen.tsx` — Lists farmer's farms with stats summary strip, "Add Farm" modal, inline validation, and all 7 UI states per §12.4
+- `frontend/src/screens/farms/FarmDetailsScreen.tsx` — Full farm view with plot management grid, "Add Plot" modal, edit/delete farm dialogs, and all 7 UI states per §12.4
+- `frontend/src/screens/farms/PlotDetailsScreen.tsx` — Individual plot view with active/historical crop cycle summaries, plot editing, delete confirmation, and all 7 UI states per §12.4
+- `frontend/src/app/AppRouter.tsx` — Wired `/farms`, `/farms/:farmId`, and `/farms/:farmId/plots/:plotId` to real screens
+
+### Tests
+- Frontend build & typecheck: **0 errors, 0 warnings** (`tsc -b && vite build` clean)
+- Backend test suite: **92 passed**
+- All 7 required UI states (§12.4) verified present across all farm and plot screens
+
+---
+
+## Prompt 13 — Crop-Cycle Screens ✅
+
+**Completed**: 2026-09-26
+
+### What was built
+- `frontend/src/api/cropCycles.ts` — Typed crop catalog and crop cycle client:
+  - `fetchCropCatalog()`, `fetchAllCropCycles()`, `fetchCropCyclesForPlot()`, `fetchCropCycle(cycleId)`, `createCropCycle()`, `updateCropCycle()`, `deleteCropCycle()`
+- `frontend/src/design-system/components/CropCycleCard/` — Skeuomorphic card with crop category emoji/icon, status badge, sowing date, expected/actual harvest countdown, and quick-status actions (Active/Harvested/Failed)
+- `frontend/src/screens/crop-cycles/CropCyclesScreen.tsx` — Master list of crop cycles with filter tabs (All / Active / Harvested / Failed), live search, summary stats strip, inline status transition, delete confirmation, and all 7 UI states (§12.4)
+- `frontend/src/screens/crop-cycles/CropCycleDetailScreen.tsx` — Detail view for single crop cycle with crop profile, expected harvest date inline editor, activity log timeline, status controls, danger zone deletion, and all 7 UI states (§12.4)
+- `frontend/src/screens/crop-cycles/CropCyclesScreen.scss` and `CropCycleDetailScreen.scss` — Skeuomorphic styles, responsive grids, countdown pills, and warning banners
+- `frontend/src/app/AppRouter.tsx` — Wired `/crop-cycles` and `/crop-cycles/:cycleId` routes
+
+### Tests
+- Frontend build & typecheck: **0 errors, 0 warnings** (`tsc -b && vite build` clean)
+- Backend test suite: **92 passed** in 2m 7s with 86% coverage
+- All 7 required UI states (§12.4) verified present
+
+## Prompt 14 — Activity Screens ✅
+
+**Completed**: 2026-09-26
+
+### What was built
+- `frontend/src/api/activities.ts` — Typed farm activities API client:
+  - `fetchActivities()`, `fetchActivitiesForCycle(cycleId)`, `fetchActivity(activityId)`, `createActivity(cycleId, payload)`, `updateActivity(activityId, payload)`, `completeActivity(activityId, payload)`, `deleteActivity(activityId)`
+  - Automatic CSRF header injection via `csrfHeaders()` on all mutating operations
+- `frontend/src/screens/activities/ActivitiesScreen.scss` — Skeuomorphic styling (§12.1–§12.3):
+  - Warm cream canvas, forest-green accents, soil-toned borders, tactile cards
+  - Distinct activity-type icon styling (💧 Irrigation, 🧪 Fertilizer, 🛡️ Pesticide, 📋 Other)
+  - Date group timeline headers, filter chips, summary metric ribbon, and tactile modal layout
+- `frontend/src/screens/activities/ActivitiesScreen.tsx` — Full activity log timeline and log-activity workflow:
+  - Chronological timeline grouped by date headers ("Today", "Tomorrow", "Yesterday", and formatted dates)
+  - Summary metric cards (Total Activities, Pending / Due, Completed)
+  - Filtering by completion status tabs (All, Due/Pending, Completed) and activity type chips (All, Irrigation, Fertilizer, Pesticide, Other)
+  - Interactive "Log Activity" modal with active crop-cycle selector, activity type selector cards, scheduled date picker, completion toggle with completion date picker, and notes textarea
+  - "Edit Activity" modal and destructive delete confirmation dialog (`ConfirmDialog`)
+  - 1-click Quick Complete button with instant loading feedback
+  - **Explicit Implementation of all 7 UI States (§12.4)**:
+    1. Loading — Skeleton shimmers for header and activity cards
+    2. Empty — Encouraging empty state with Sprout/Filter icon and CTA to "Log First Activity"
+    3. Success — Grouped timeline cards with status badges and action controls
+    4. Validation error — Inline field-level validation on modal for missing cycle, invalid dates, and note limits
+    5. API error — Inline retryable error banner
+    6. Permission denied — 403 access restriction guard
+    7. Unavailable / Stale — 503 / network offline banner with retry button
+- `frontend/src/app/AppRouter.tsx` — Wired `/activities` route to `<ActivitiesScreen />`
+
+### Tests
+- Frontend build & typecheck: **0 errors, 0 warnings** (`tsc -b && vite build` clean, 1946 modules transformed)
+- Backend test suite: **4/4 activity tests passed** (92/92 overall backend tests pass)
+- All 7 required UI states (§12.4) verified present
+
+---
+
+_Next: Prompt 15 — Weather/advisory screens (`/weather` — `WeatherAdvisoryCard` per §8 and §12.2 with mandatory unavailable/stale-data states per §12.4)_
 

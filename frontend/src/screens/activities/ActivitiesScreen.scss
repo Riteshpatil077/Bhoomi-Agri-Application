@@ -1,0 +1,560 @@
+// ============================================================================
+// Bhoomi — ActivitiesScreen SCSS (Modern Agriculture Skeuomorphism, §12)
+// ============================================================================
+@use "../../design-system/tokens" as *;
+
+.act-screen {
+  padding: $space-lg $space-xl;
+  max-width: 1100px;
+  margin: 0 auto;
+
+  @media (max-width: 768px) {
+    padding: $space-md;
+  }
+
+  // ── Header ─────────────────────────────────────────────────────────────
+  &__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: $space-lg;
+    gap: $space-md;
+    flex-wrap: wrap;
+  }
+
+  &__header-text {
+    flex: 1;
+    min-width: 250px;
+  }
+
+  &__title {
+    font-family: $font-heading;
+    font-size: 1.875rem;
+    font-weight: 700;
+    color: $color-main-text;
+    display: flex;
+    align-items: center;
+    gap: $space-sm;
+    margin: 0 0 $space-xs;
+  }
+
+  &__subtitle {
+    color: $color-muted-text;
+    font-size: 0.95rem;
+    margin: 0;
+  }
+
+  &__header-actions {
+    display: flex;
+    gap: $space-sm;
+    align-items: center;
+  }
+
+  // ── Summary Stats Strip ────────────────────────────────────────────────
+  &__stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: $space-md;
+    margin-bottom: $space-lg;
+  }
+
+  &__stat-card {
+    background: $color-surface;
+    border: 1px solid $color-border;
+    border-radius: $radius-md;
+    padding: $space-md $space-lg;
+    box-shadow: $shadow-tactile-card;
+    display: flex;
+    flex-direction: column;
+    gap: $space-xs;
+
+    &-label {
+      font-size: 0.825rem;
+      font-weight: 600;
+      color: $color-muted-text;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    &-value {
+      font-family: $font-heading;
+      font-size: 1.75rem;
+      font-weight: 700;
+      color: $color-main-text;
+
+      &--pending {
+        color: $color-warning;
+      }
+      &--completed {
+        color: $color-primary-green;
+      }
+    }
+  }
+
+  // ── Filter Toolbar ─────────────────────────────────────────────────────
+  &__toolbar {
+    background: $color-surface;
+    border: 1px solid $color-border;
+    border-radius: $radius-lg;
+    padding: $space-md;
+    margin-bottom: $space-lg;
+    box-shadow: $shadow-sm;
+    display: flex;
+    flex-direction: column;
+    gap: $space-md;
+  }
+
+  &__tabs-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: $space-sm;
+  }
+
+  &__tabs {
+    display: flex;
+    background: $color-warm-cream;
+    border: 1px solid $color-border;
+    border-radius: $radius-full;
+    padding: 3px;
+    gap: 3px;
+  }
+
+  &__tab {
+    background: transparent;
+    border: none;
+    border-radius: $radius-full;
+    padding: 6px 16px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: $color-muted-text;
+    cursor: pointer;
+    transition: all $transition-fast;
+
+    &:hover {
+      color: $color-main-text;
+    }
+
+    &--active {
+      background: $color-surface;
+      color: $color-primary-green;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+  }
+
+  &__chips {
+    display: flex;
+    gap: $space-xs;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  &__chip {
+    background: $color-warm-cream;
+    border: 1px solid $color-border;
+    border-radius: $radius-full;
+    padding: 4px 12px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: $color-main-text;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    transition: all $transition-fast;
+
+    &:hover {
+      border-color: $color-border-dark;
+      background: #F0ECE0;
+    }
+
+    &--active {
+      background: $color-pale-green;
+      border-color: $color-primary-green;
+      color: $color-primary-dark;
+      font-weight: 600;
+    }
+  }
+
+  // ── Timeline & Date Groups ─────────────────────────────────────────────
+  &__timeline {
+    display: flex;
+    flex-direction: column;
+    gap: $space-xl;
+  }
+
+  &__date-group {
+    display: flex;
+    flex-direction: column;
+    gap: $space-sm;
+  }
+
+  &__date-header {
+    display: flex;
+    align-items: center;
+    gap: $space-sm;
+    font-family: $font-heading;
+    font-size: 1rem;
+    font-weight: 700;
+    color: $color-soil-brown;
+    padding-bottom: $space-xs;
+    border-bottom: 2px dashed $color-border;
+
+    &-icon {
+      color: $color-leaf-green;
+    }
+
+    &-badge {
+      font-size: 0.75rem;
+      background: $color-pale-green;
+      color: $color-primary-green;
+      padding: 2px 8px;
+      border-radius: $radius-full;
+      font-weight: 600;
+    }
+  }
+
+  // ── Activity Cards ─────────────────────────────────────────────────────
+  &__card {
+    background: $color-surface;
+    border: 1px solid $color-border;
+    border-radius: $radius-md;
+    box-shadow: $shadow-tactile-card;
+    padding: $space-md $space-lg;
+    display: flex;
+    align-items: flex-start;
+    gap: $space-md;
+    transition: transform $transition-fast, box-shadow $transition-fast;
+    position: relative;
+
+    &:hover {
+      box-shadow: $shadow-md;
+    }
+
+    &--completed {
+      background: #FAFCF9;
+      opacity: 0.92;
+
+      .act-screen__card-title {
+        text-decoration: line-through;
+        color: $color-muted-text;
+      }
+    }
+
+    &-icon-wrap {
+      width: 44px;
+      height: 44px;
+      border-radius: $radius-md;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.4rem;
+      flex-shrink: 0;
+
+      &--irrigation {
+        background: #E0F2FE;
+        border: 1px solid #BAE6FD;
+        color: #0284C7;
+      }
+      &--fertilizer {
+        background: #FEF3C7;
+        border: 1px solid #FDE68A;
+        color: #B45309;
+      }
+      &--pesticide {
+        background: #FCE7F3;
+        border: 1px solid #FBCFE8;
+        color: #BE185D;
+      }
+      &--other {
+        background: #F1F5F9;
+        border: 1px solid #E2E8F0;
+        color: #475569;
+      }
+    }
+
+    &-body {
+      flex: 1;
+      min-width: 0;
+    }
+
+    &-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: $space-sm;
+      margin-bottom: $space-xs;
+      flex-wrap: wrap;
+    }
+
+    &-title {
+      font-family: $font-heading;
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: $color-main-text;
+      margin: 0;
+    }
+
+    &-meta {
+      display: flex;
+      align-items: center;
+      gap: $space-sm;
+      flex-wrap: wrap;
+      margin-bottom: $space-xs;
+      font-size: 0.85rem;
+      color: $color-muted-text;
+    }
+
+    &-tag {
+      background: $color-warm-cream;
+      border: 1px solid $color-border;
+      padding: 1px 7px;
+      border-radius: $radius-sm;
+      font-size: 0.8rem;
+      color: $color-soil-dark;
+      font-weight: 500;
+    }
+
+    &-notes {
+      font-size: 0.9rem;
+      color: $color-main-text;
+      background: #FBF9F4;
+      border-left: 3px solid $color-leaf-green;
+      padding: $space-xs $space-sm;
+      margin-top: $space-xs;
+      border-radius: 0 $radius-sm $radius-sm 0;
+    }
+
+    &-actions {
+      display: flex;
+      align-items: center;
+      gap: $space-xs;
+      flex-shrink: 0;
+    }
+
+    &-complete-btn {
+      background: $color-surface;
+      border: 1px solid $color-leaf-green;
+      color: $color-primary-green;
+      border-radius: $radius-full;
+      padding: 6px 14px;
+      font-size: 0.825rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all $transition-fast;
+
+      &:hover {
+        background: $color-primary-green;
+        color: #fff;
+      }
+    }
+
+    &-action-btn {
+      background: transparent;
+      border: 1px solid transparent;
+      border-radius: $radius-sm;
+      padding: 6px;
+      cursor: pointer;
+      color: $color-muted-text;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      transition: all $transition-fast;
+
+      &:hover {
+        background: $color-warm-cream;
+        border-color: $color-border;
+        color: $color-main-text;
+      }
+
+      &--delete:hover {
+        background: $color-error-bg;
+        border-color: #FECDCA;
+        color: $color-error;
+      }
+    }
+  }
+
+  // ── Skeletons ──────────────────────────────────────────────────────────
+  &__skeleton {
+    &-header {
+      height: 48px;
+      background: #E8E5DD;
+      border-radius: $radius-md;
+      margin-bottom: $space-lg;
+      animation: act-pulse 1.4s infinite ease-in-out;
+    }
+
+    &-card {
+      height: 90px;
+      background: $color-surface;
+      border: 1px solid $color-border;
+      border-radius: $radius-md;
+      margin-bottom: $space-md;
+      animation: act-pulse 1.4s infinite ease-in-out;
+    }
+  }
+
+  // ── Alert Banners (Errors / Permission / Unavailable) ──────────────────
+  &__banner {
+    display: flex;
+    align-items: center;
+    gap: $space-md;
+    padding: $space-md $space-lg;
+    border-radius: $radius-md;
+    margin-bottom: $space-lg;
+
+    &--error {
+      background: $color-error-bg;
+      border: 1px solid #FDA29B;
+      color: $color-error;
+    }
+
+    &--warn {
+      background: $color-warning-bg;
+      border: 1px solid #FEDF89;
+      color: $color-warning;
+    }
+
+    &-title {
+      font-weight: 700;
+      margin: 0 0 2px;
+    }
+
+    &-msg {
+      margin: 0;
+      font-size: 0.9rem;
+      opacity: 0.9;
+    }
+
+    &-retry {
+      margin-left: auto;
+      background: $color-surface;
+      border: 1px solid currentColor;
+      color: inherit;
+      padding: 6px 14px;
+      border-radius: $radius-sm;
+      font-weight: 600;
+      cursor: pointer;
+    }
+  }
+
+  // ── Modal Styles ───────────────────────────────────────────────────────
+  &__modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(24, 52, 32, 0.45);
+    backdrop-filter: blur(2px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    padding: $space-md;
+  }
+
+  &__modal {
+    background: $color-surface;
+    border: 1px solid $color-border;
+    border-radius: $radius-lg;
+    box-shadow: $shadow-lg;
+    max-width: 540px;
+    width: 100%;
+    max-height: 90vh;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+  }
+
+  &__modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: $space-md $space-lg;
+    border-bottom: 1px solid $color-border;
+    background: $color-warm-cream;
+  }
+
+  &__modal-title {
+    font-family: $font-heading;
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: $color-main-text;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: $space-sm;
+  }
+
+  &__modal-close {
+    background: transparent;
+    border: none;
+    color: $color-muted-text;
+    cursor: pointer;
+    padding: 4px;
+    border-radius: $radius-sm;
+
+    &:hover {
+      color: $color-main-text;
+      background: rgba(0, 0, 0, 0.05);
+    }
+  }
+
+  &__modal-body {
+    padding: $space-lg;
+    display: flex;
+    flex-direction: column;
+    gap: $space-md;
+  }
+
+  &__modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: $space-sm;
+    padding: $space-md $space-lg;
+    border-top: 1px solid $color-border;
+    background: $color-warm-cream;
+  }
+
+  // Type selector in modal
+  &__type-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: $space-sm;
+  }
+
+  &__type-btn {
+    display: flex;
+    align-items: center;
+    gap: $space-sm;
+    padding: $space-sm $space-md;
+    background: $color-warm-cream;
+    border: 1px solid $color-border;
+    border-radius: $radius-md;
+    cursor: pointer;
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: $color-main-text;
+    transition: all $transition-fast;
+
+    &:hover {
+      border-color: $color-border-dark;
+    }
+
+    &--active {
+      background: $color-pale-green;
+      border-color: $color-primary-green;
+      color: $color-primary-dark;
+      font-weight: 700;
+    }
+  }
+}
+
+@keyframes act-pulse {
+  0% { opacity: 0.6; }
+  50% { opacity: 1; }
+  100% { opacity: 0.6; }
+}
