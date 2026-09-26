@@ -481,7 +481,37 @@ All 8 backend modules of the MVP are fully implemented, verified, and passing 92
 - Backend test suite: **5/5 weather tests passed** (92/92 overall backend tests pass)
 - All 7 required UI states (§12.4) verified present
 
+## Prompt 16 — Farmer Dashboard ✅
+
+**Completed**: 2026-09-26
+
+### What was built
+- `frontend/src/screens/dashboard/DashboardScreen.scss` — Skeuomorphic layout (§12.1–§12.3):
+  - Forest-green gradient welcome panel with decorative wheat watermark and tactile verification badge
+  - Compact summary cards with distinct color-coded icons (Farms, Active Crops, Due Tasks, Hyperlocal Weather)
+  - 2-column agricultural layout: primary column for Urgent Alerts, Today's Scheduled Tasks, and Active Planting Cycles; sidebar column for Hyperlocal Field Weather and Registered Farms mini-lists
+- `frontend/src/screens/dashboard/DashboardScreen.tsx` — Central farmer command center:
+  - **Zero Invented Stats (§12.2)**: Live aggregation from backend endpoints (`/farms`, `/crop-cycles?status=active`, `/activities?is_completed=false`, `/weather/forecast`, `/weather/advisories`)
+  - **Urgent Alerts & Today's Tasks near top (§12.2)**: Prominent high-severity pest/weather alerts and pending tasks with 1-click Quick-Complete button
+  - Active Planting Cycles mini-grid with `<CropCycleCard />` (up to 3 active cycles) with link to `/crop-cycles`
+  - Compact Hyperlocal Weather Widget with current temperature, condition, 4-metric grid, IMD provenance, and link to `/weather`
+  - Registered Farms mini-list with `<FarmCard />`
+  - **Independent implementation of all 7 UI States (§12.4) across every section**:
+    1. Loading — Per-section skeletal shimmer placeholders
+    2. Empty — Contextual per-section empty states with distinct icons and action CTAs (e.g. "Plan an Activity", "Start a Crop Cycle", "Add Farm")
+    3. Success — Live verified data rendering across all cards
+    4. Validation error — Graceful boundary handling
+    5. API error — Dedicated per-section retry buttons and error alerts
+    6. Permission denied — Honest 403 rendering
+    7. Unavailable / Stale external data — Explicit warning notice when weather data is stale with last-known-good attribution per §8
+- `frontend/src/app/AppRouter.tsx` — Wired `/dashboard` route to `<DashboardScreen />`
+
+### Tests
+- Frontend build & typecheck: **0 errors, 0 warnings** (`tsc -b && vite build` clean, 1953 modules transformed)
+- Backend test suite: **92/92 tests passed** with 86% coverage
+- All 7 required UI states (§12.4) verified present across all dashboard sections independently
+
 ---
 
-_Next: Prompt 16 — Farmer dashboard (`/dashboard` — Assembled per §12.2 hierarchy with no invented crop counts, weather, or stats; all 7 states per §12.4 implemented across every section independently)_
+_Next: Prompt 17 — Responsive & accessibility pass (mobile, tablet, desktop widths per §12.5; verification of all 7 states from §12.4 across Prompts 10–16)_
 

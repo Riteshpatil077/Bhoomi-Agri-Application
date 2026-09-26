@@ -1,0 +1,406 @@
+// ============================================================================
+// Bhoomi — DashboardScreen SCSS (Modern Agriculture Skeuomorphism, §12)
+// ============================================================================
+@use "../../design-system/tokens" as *;
+
+.dashboard-screen {
+  padding: $space-lg $space-xl;
+  max-width: 1200px;
+  margin: 0 auto;
+
+  @media (max-width: 768px) {
+    padding: $space-md;
+  }
+
+  // ── Welcome Panel ──────────────────────────────────────────────────────
+  &__welcome-panel {
+    background: linear-gradient(135deg, $color-sidebar-bg 0%, $color-primary-green 100%);
+    border-radius: $radius-lg;
+    padding: $space-xl;
+    color: #FFFFFF;
+    box-shadow: $shadow-lg;
+    margin-bottom: $space-xl;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: $space-lg;
+    flex-wrap: wrap;
+    position: relative;
+    overflow: hidden;
+
+    &::after {
+      content: "🌾";
+      position: absolute;
+      right: 20px;
+      bottom: -15px;
+      font-size: 8rem;
+      opacity: 0.12;
+      pointer-events: none;
+    }
+
+    &-text {
+      flex: 1;
+      min-width: 260px;
+      z-index: 1;
+    }
+
+    &-badge-row {
+      display: flex;
+      align-items: center;
+      gap: $space-sm;
+      margin-bottom: $space-xs;
+      flex-wrap: wrap;
+    }
+
+    &-title {
+      font-family: $font-heading;
+      font-size: 2rem;
+      font-weight: 700;
+      color: #FFFFFF;
+      margin: 0 0 $space-xs;
+      line-height: 1.2;
+    }
+
+    &-subtitle {
+      font-size: 1rem;
+      color: #D1DFCA;
+      margin: 0;
+      max-width: 580px;
+      line-height: 1.5;
+    }
+
+    &-actions {
+      display: flex;
+      gap: $space-sm;
+      align-items: center;
+      flex-wrap: wrap;
+      z-index: 1;
+    }
+  }
+
+  // ── Metric Cards Grid ──────────────────────────────────────────────────
+  &__metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: $space-md;
+    margin-bottom: $space-xl;
+  }
+
+  &__metric-card {
+    background: $color-surface;
+    border: 1px solid $color-border;
+    border-radius: $radius-md;
+    padding: $space-md $space-lg;
+    box-shadow: $shadow-tactile-card;
+    display: flex;
+    align-items: center;
+    gap: $space-md;
+    text-decoration: none;
+    color: inherit;
+    transition: transform $transition-fast, box-shadow $transition-fast;
+
+    &:hover {
+      box-shadow: $shadow-md;
+      transform: translateY(-2px);
+    }
+
+    &-icon-wrap {
+      width: 48px;
+      height: 48px;
+      border-radius: $radius-md;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+      flex-shrink: 0;
+
+      &--farms {
+        background: $color-pale-green;
+        color: $color-primary-green;
+      }
+      &--cycles {
+        background: #FEF3C7;
+        color: #B45309;
+      }
+      &--tasks {
+        background: #E0F2FE;
+        color: #0284C7;
+      }
+      &--weather {
+        background: #FFF1F2;
+        color: #E11D48;
+      }
+    }
+
+    &-info {
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+    }
+
+    &-label {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: $color-muted-text;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    &-value {
+      font-family: $font-heading;
+      font-size: 1.75rem;
+      font-weight: 800;
+      color: $color-main-text;
+      line-height: 1.1;
+      margin: 2px 0;
+    }
+
+    &-subtext {
+      font-size: 0.8rem;
+      color: $color-muted-text;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+  }
+
+  // ── Two-Column Layout ──────────────────────────────────────────────────
+  &__layout-grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: $space-xl;
+
+    @media (max-width: 1024px) {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  &__main-column {
+    display: flex;
+    flex-direction: column;
+    gap: $space-xl;
+  }
+
+  &__side-column {
+    display: flex;
+    flex-direction: column;
+    gap: $space-xl;
+  }
+
+  // ── Section Card Container ─────────────────────────────────────────────
+  &__section-card {
+    background: $color-surface;
+    border: 1px solid $color-border;
+    border-radius: $radius-lg;
+    padding: $space-lg;
+    box-shadow: $shadow-tactile-card;
+    display: flex;
+    flex-direction: column;
+    gap: $space-md;
+
+    &-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: $space-sm;
+      flex-wrap: wrap;
+    }
+
+    &-title {
+      font-family: $font-heading;
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: $color-main-text;
+      margin: 0;
+      display: flex;
+      align-items: center;
+      gap: $space-sm;
+    }
+
+    &-count {
+      background: $color-pale-green;
+      color: $color-primary-green;
+      font-size: 0.75rem;
+      padding: 2px 8px;
+      border-radius: $radius-full;
+      font-weight: 700;
+    }
+
+    &-link {
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: $color-primary-green;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+
+      &:hover {
+        text-decoration: underline;
+      }
+    }
+  }
+
+  // ── Urgent Alerts List ─────────────────────────────────────────────────
+  &__urgent-alert {
+    background: #FEF3F2;
+    border: 1px solid #FECDCA;
+    border-left: 4px solid $color-error;
+    border-radius: $radius-md;
+    padding: $space-sm $space-md;
+    display: flex;
+    align-items: flex-start;
+    gap: $space-sm;
+
+    &-icon {
+      font-size: 1.25rem;
+      flex-shrink: 0;
+      color: $color-error;
+    }
+
+    &-body {
+      flex: 1;
+      font-size: 0.9rem;
+    }
+
+    &-title {
+      font-weight: 700;
+      color: $color-error;
+      margin: 0 0 2px;
+    }
+
+    &-msg {
+      margin: 0;
+      color: $color-main-text;
+      font-size: 0.85rem;
+    }
+  }
+
+  // ── Today's Tasks Rows ─────────────────────────────────────────────────
+  &__task-item {
+    background: $color-warm-cream;
+    border: 1px solid $color-border;
+    border-radius: $radius-md;
+    padding: $space-sm $space-md;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: $space-sm;
+    transition: all $transition-fast;
+
+    &:hover {
+      background: #F2EDE0;
+    }
+
+    &-left {
+      display: flex;
+      align-items: center;
+      gap: $space-sm;
+      min-width: 0;
+    }
+
+    &-icon {
+      font-size: 1.2rem;
+      flex-shrink: 0;
+    }
+
+    &-info {
+      min-width: 0;
+    }
+
+    &-title {
+      font-weight: 700;
+      font-size: 0.95rem;
+      color: $color-main-text;
+      margin: 0;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    &-meta {
+      font-size: 0.8rem;
+      color: $color-muted-text;
+      margin: 0;
+    }
+
+    &-complete-btn {
+      background: $color-surface;
+      border: 1px solid $color-leaf-green;
+      color: $color-primary-green;
+      border-radius: $radius-full;
+      padding: 4px 12px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      flex-shrink: 0;
+      transition: all $transition-fast;
+
+      &:hover {
+        background: $color-primary-green;
+        color: #FFFFFF;
+      }
+    }
+  }
+
+  // ── Mini Weather Widget ────────────────────────────────────────────────
+  &__weather-widget {
+    display: flex;
+    flex-direction: column;
+    gap: $space-sm;
+
+    &-main {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: $space-md;
+      padding-bottom: $space-sm;
+      border-bottom: 1px solid rgba(216, 223, 210, 0.6);
+    }
+
+    &-temp {
+      font-family: $font-heading;
+      font-size: 2.5rem;
+      font-weight: 800;
+      color: $color-main-text;
+      line-height: 1;
+    }
+
+    &-condition {
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: $color-leaf-green;
+      margin-top: 2px;
+    }
+
+    &-icon {
+      font-size: 3rem;
+      line-height: 1;
+    }
+
+    &-meta-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: $space-xs;
+      font-size: 0.8rem;
+      color: $color-muted-text;
+    }
+  }
+
+  // ── Skeletons ──────────────────────────────────────────────────────────
+  &__skeleton {
+    height: 80px;
+    background: #E8E5DD;
+    border-radius: $radius-md;
+    animation: dash-pulse 1.4s infinite ease-in-out;
+  }
+}
+
+@keyframes dash-pulse {
+  0% { opacity: 0.6; }
+  50% { opacity: 1; }
+  100% { opacity: 0.6; }
+}

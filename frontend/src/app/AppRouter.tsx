@@ -16,6 +16,7 @@ import { CropCyclesScreen } from "../screens/crop-cycles/CropCyclesScreen";
 import { CropCycleDetailScreen } from "../screens/crop-cycles/CropCycleDetailScreen";
 import { ActivitiesScreen } from "../screens/activities/ActivitiesScreen";
 import { WeatherScreen } from "../screens/weather/WeatherScreen";
+import { DashboardScreen } from "../screens/dashboard/DashboardScreen";
 import { StyleGuidePage } from "../screens/style-guide/StyleGuidePage";
 
 // ─── Guards ───────────────────────────────────────────────────────────────────
@@ -123,7 +124,7 @@ export function AppRouter() {
         {/* Protected routes (redirect to /login if not authenticated) */}
         <Route element={<ProtectedRoute />}>
           <Route path="/profile" element={<ProfileScreen />} />
-          <Route path="/dashboard" element={<PlaceholderPage title="Dashboard — Prompt 16" />} />
+          <Route path="/dashboard" element={<DashboardScreen />} />
           <Route path="/farms" element={<MyFarmsScreen />} />
           <Route path="/farms/:farmId" element={<FarmDetailsScreen />} />
           <Route path="/farms/:farmId/plots/:plotId" element={<PlotDetailsScreen />} />
