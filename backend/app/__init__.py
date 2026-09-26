@@ -42,11 +42,13 @@ def create_app(config_name: str | None = None) -> Flask:
     # ------------------------------------------------------------------ #
     from .blueprints.health import health_bp
     from .blueprints.auth import auth_bp
+    from .blueprints.admin import admin_bp
+    from .blueprints.super_admin import super_admin_bp
 
     app.register_blueprint(health_bp)
     app.register_blueprint(auth_bp, url_prefix="/api/auth")
-
-    # Phase 2+ blueprints registered here as they are built.
+    app.register_blueprint(admin_bp, url_prefix="/api/admin")
+    app.register_blueprint(super_admin_bp, url_prefix="/api/super-admin")
 
     # ------------------------------------------------------------------ #
     # CLI commands                                                         #
