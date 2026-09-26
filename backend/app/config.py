@@ -13,7 +13,7 @@ class BaseConfig:
     # ------------------------------------------------------------------ #
     # Core                                                                 #
     # ------------------------------------------------------------------ #
-    SECRET_KEY: str = os.environ.get("SECRET_KEY", "change-me-in-production")
+    SECRET_KEY: str = os.environ.get("SECRET_KEY", "bhoomi-dev-secret-key-32-bytes-long-min!!")
     DEBUG: bool = False
     TESTING: bool = False
 
@@ -53,7 +53,9 @@ class BaseConfig:
     # ------------------------------------------------------------------ #
     # JWT (§6)                                                             #
     # ------------------------------------------------------------------ #
-    JWT_SECRET_KEY: str = os.environ.get("JWT_SECRET_KEY", "change-jwt-secret-prod")
+    JWT_SECRET_KEY: str = os.environ.get(
+        "JWT_SECRET_KEY", "bhoomi-jwt-dev-secret-key-32-bytes-min!!"
+    )
     JWT_ACCESS_TOKEN_EXPIRES: timedelta = timedelta(minutes=15)
     JWT_REFRESH_TOKEN_EXPIRES: timedelta = timedelta(days=7)
     # Tokens travel as httpOnly, Secure, SameSite=Strict cookies (§6).

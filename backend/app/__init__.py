@@ -28,6 +28,8 @@ def create_app(config_name: str | None = None) -> Flask:
     migrate.init_app(app, db)
     from . import models  # Register all models with db metadata
     jwt.init_app(app)
+    from .jwt_handlers import configure_jwt
+    configure_jwt(app, jwt)
     limiter.init_app(app)
     cors.init_app(
         app,

@@ -62,4 +62,33 @@ Updated after every completed, verified module per the Prompt 0 working agreemen
 
 ---
 
-_Next: Prompt 3 — Auth module_
+## Prompt 3 — Auth Module ✅
+
+**Completed**: 2026-09-26
+
+### What was built
+- `backend/app/schemas/auth.py` — Marshmallow `RegisterSchema` with `unknown = EXCLUDE` (client-supplied `platform_role` is silently stripped and forced to `'user'` per §7.6), `LoginSchema` (phone or email + password), `StepUpSchema`
+- `backend/app/blueprints/auth/routes.py`:
+  - `POST /api/auth/register` — validates input, enforces `platform_role = 'user'`, hashes password with bcrypt, returns sanitized user dict (201)
+  - `POST /api/auth/login` — validates credentials, issues short-lived JWT access cookie (15 min) + refresh cookie (7 days) with `httpOnly=True`, `SameSite=Strict`, tracks session family in `refresh_tokens`, returns `csrf_token` and `csrf_refresh_token` in body (200)
+  - `POST /api/auth/refresh` — validates refresh token with double-submit CSRF protection, enforces **refresh token rotation** (invalidates old token, issues new pair with same `token_family`), and implements **stolen-token-reuse detection** (reusing revoked token revokes ENTIRE token family and clears cookies) per §6
+  - `POST /api/auth/logout` — single session logout, revokes active refresh token and unsets JWT cookies
+  - `POST /api/auth/logout-all` — all-devices logout, revokes all active refresh tokens for the user and unsets cookies
+  - `GET /api/auth/me` — returns current authenticated user profile re-verified from the DB on every request
+  - `POST /api/auth/verify-password` — verifies password confirmation for step-up re-authentication
+  - `POST /api/auth/step-up-test` — endpoint demonstrating `@require_step_up_auth` enforcement
+- `backend/app/rbac/step_up.py` — `verify_step_up_password` and `@require_step_up_auth` decorator requiring valid password re-entry for sensitive operations per §6 & §7
+- `backend/app/jwt_handlers.py` — JWT callbacks wired up: `user_identity_loader`, `user_lookup_loader` (re-verifies active user from DB on every request), `additional_claims_loader`, error loaders, and `CSRFError` handler returning 401 JSON
+- `backend/tests/test_auth.py` — 13 comprehensive tests covering registration role enforcement, login success/failure, CSRF header protection, refresh rotation, stolen-token family revocation, logout/logout-all, profile retrieval, and step-up auth
+
+### Tests
+- Backend test suite: **28 passed** (7 scaffolding + 8 models + 13 auth)
+- Frontend build & typecheck: **0 errors**
+
+### Known deferred items (not bugs)
+- RBAC decorators (`platform_role_required`, `permission_required`), Super Admin promotion endpoints, and `flask create-super-admin` CLI — Prompt 4
+- Farmer verification upload & review endpoints — Prompt 5
+
+---
+
+_Next: Prompt 4 — RBAC, permission grants, and Super Admin bootstrap_

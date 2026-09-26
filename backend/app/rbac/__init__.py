@@ -1,7 +1,10 @@
 """
-RBAC package — decorators and helpers (§7).
-Full implementation in Prompt 4:
-  - platform_role_required(*roles)
-  - permission_required(permission_key)
-  - require_step_up_auth
+Bhoomi — RBAC Package
+Exports RBAC decorators and helpers.
 """
+from .step_up import require_step_up_auth, verify_step_up_password
+
+__all__ = [
+    "require_step_up_auth",
+    "verify_step_up_password",
+]

@@ -1,4 +1,11 @@
 """
-Schemas package — Marshmallow validation schemas.
-Full schemas added per module in Prompts 2–8.
+Bhoomi — Schemas Package
+Exports Marshmallow validation schemas across the application.
 """
+from .auth import RegisterSchema, LoginSchema, StepUpSchema
+
+__all__ = [
+    "RegisterSchema",
+    "LoginSchema",
+    "StepUpSchema",
+]

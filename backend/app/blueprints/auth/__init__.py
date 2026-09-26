@@ -1,10 +1,7 @@
 """
-Bhoomi — Auth blueprint (scaffold)
-Full implementation follows in Prompt 3.
-This stub registers the blueprint so the app factory doesn't fail.
+Bhoomi — Auth Blueprint Package
+Exports auth_bp with all authentication routes.
 """
-from flask import Blueprint
+from .routes import auth_bp
 
-auth_bp = Blueprint("auth", __name__)
-
-# Endpoints implemented in Prompt 3.
+__all__ = ["auth_bp"]
