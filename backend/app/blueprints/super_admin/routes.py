@@ -15,6 +15,7 @@ Endpoints:
 from __future__ import annotations
 
 import uuid
+import re
 from datetime import datetime, timezone
 
 from flask import jsonify, request
@@ -25,7 +26,8 @@ from app.extensions import db
 from app.models.user import User
 from app.models.admin import AdminPermissionGrant
 from app.models.audit import AuditLog
-from app.rbac import platform_role_required
+from app.models.platform_setting import PlatformSetting
+from app.rbac import platform_role_required, permission_required, require_step_up_auth
 
 from . import super_admin_bp
 
@@ -43,6 +45,7 @@ class CreateAdminSchema(Schema):
     phone_number = fields.Str(required=True, validate=validate.Length(min=7, max=20))
     email = fields.Email(load_default=None)
     password = fields.Str(required=True, validate=validate.Length(min=8))
+    step_up_password = fields.Str(load_default=None, load_only=True)
     platform_role = fields.Str(
         required=True,
         validate=validate.OneOf(["admin", "super_admin"]),
@@ -67,6 +70,42 @@ class GrantPermissionSchema(Schema):
 
 _create_admin_schema = CreateAdminSchema()
 _grant_perm_schema = GrantPermissionSchema()
+
+
+@super_admin_bp.route("/settings", methods=["GET"])
+@jwt_required()
+@platform_role_required("super_admin")
+def list_platform_settings():
+    settings = PlatformSetting.query.order_by(PlatformSetting.key.asc()).all()
+    return jsonify({"settings": [setting.to_dict() for setting in settings]}), 200
+
+
+@super_admin_bp.route("/settings/<string:key>", methods=["PUT"])
+@jwt_required()
+@platform_role_required("super_admin")
+def update_platform_setting(key: str):
+    if not re.fullmatch(r"[a-z][a-z0-9_.-]{0,119}", key):
+        return jsonify({"error": "validation_error", "message": "Invalid setting key."}), 422
+    body = request.get_json(silent=True)
+    if not isinstance(body, dict) or "value" not in body:
+        return jsonify({"error": "validation_error", "message": "A value field is required."}), 422
+
+    setting = db.session.get(PlatformSetting, key)
+    if setting is None:
+        setting = PlatformSetting(key=key, value=body["value"], updated_by=current_user.id)
+        db.session.add(setting)
+    else:
+        setting.value = body["value"]
+        setting.updated_by = current_user.id
+    db.session.flush()
+    _log(
+        "update_platform_setting",
+        "PlatformSetting",
+        resource_id=key,
+        metadata={"value": body["value"]},
+    )
+    db.session.commit()
+    return jsonify({"message": "Platform setting saved.", "setting": setting.to_dict()}), 200
 
 
 # --------------------------------------------------------------------------- #
@@ -110,6 +149,7 @@ def list_admins():
 @super_admin_bp.route("/admins", methods=["POST"])
 @jwt_required()
 @platform_role_required("super_admin")
+@require_step_up_auth
 def create_admin():
     """
     POST /api/super-admin/admins
@@ -144,7 +184,7 @@ def create_admin():
     db.session.flush()   # get ID before logging
 
     _log(
-        "create_admin_account",
+        "promote_to_super_admin" if data["platform_role"] == "super_admin" else "create_admin_account",
         "User",
         resource_id=str(new_user.id),
         metadata={"platform_role": data["platform_role"]},
@@ -183,6 +223,9 @@ def deactivate_admin(user_id: str):
 
     body = request.get_json(silent=True) or {}
     reason = body.get("reason")
+    if not isinstance(reason, str) or len(reason.strip()) < 5:
+        return jsonify({"error": "validation_error", "message": "A reason of at least 5 characters is required."}), 422
+    reason = reason.strip()
 
     target.is_active = False
     _log("deactivate_admin_account", "User", resource_id=str(uid), reason=reason)
@@ -216,6 +259,9 @@ def activate_admin(user_id: str):
 
     body = request.get_json(silent=True) or {}
     reason = body.get("reason")
+    if not isinstance(reason, str) or len(reason.strip()) < 5:
+        return jsonify({"error": "validation_error", "message": "A reason of at least 5 characters is required."}), 422
+    reason = reason.strip()
 
     target.is_active = True
     _log("activate_admin_account", "User", resource_id=str(uid), reason=reason)
@@ -370,6 +416,7 @@ def revoke_permission(user_id: str, permission_key: str):
 @super_admin_bp.route("/audit-logs", methods=["GET"])
 @jwt_required()
 @platform_role_required("super_admin")
+@permission_required("audit_log_view", allow_super_admin_bypass=False)
 def view_audit_logs():
     """
     GET /api/super-admin/audit-logs

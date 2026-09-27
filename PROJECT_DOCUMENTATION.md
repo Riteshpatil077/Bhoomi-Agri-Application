@@ -265,9 +265,10 @@ A scheduled Celery task (`purge_expired_verification_docs`) executes daily:
   - Dispatches notifications directly to the farmer's notification drawer.
 
 ### 6.4 Weather Synchronization & Stale Data Degradation (§8, §13)
-- Background task polls OpenWeatherMap for district coordinates every 3 hours.
-- If upstream weather APIs fail or rate limits are reached, the system **never hallucinates weather data**.
-- Instead, it serves the last known forecast and explicitly flags it as `stale` with `source_updated_at` attribution, triggering State 7 (Unavailable/Stale Data) in the frontend.
+- Background task polls OpenWeather for configured district coordinates every 3 hours.
+- Without a configured provider key, the API returns unavailable data outside tests; test fixtures are labeled as test data and never as a live or official feed.
+- If an upstream request fails, the API serves the last known forecast marked `stale`, or returns `unavailable` when there is no prior record.
+- Provider provenance is displayed from the stored source name. OpenWeather is not represented as an official IMD feed.
 
 ---
 
@@ -315,13 +316,15 @@ Every primary screen in the application explicitly handles all 7 states without 
 | `POST` | `/api/auth/logout` | Revoke active session token | Authenticated |
 | `POST` | `/api/auth/logout-all` | Revoke all session tokens across all devices | Authenticated |
 | `GET` | `/api/auth/me` | Fetch active user profile from live database | Authenticated |
+| `PATCH` | `/api/auth/me` | Update caller's name and preferred language | Authenticated |
+| `POST` | `/api/auth/change-password` | Change password after confirming current password | Authenticated |
 | `POST` | `/api/auth/verify-password` | Verify password for step-up re-authentication | Authenticated |
 
 ### 8.2 Farmer Verification (`/api/verification`)
 | Method | Endpoint | Description | Guard / Permission |
 |---|---|---|---|
 | `GET` | `/api/verification/status` | Get current farmer verification progress | Authenticated |
-| `POST` | `/api/verification/upload-url` | Generate presigned S3 upload URL | Authenticated |
+| `POST` | `/api/verification/upload-url` | Generate size-limited presigned S3 POST policy | Authenticated |
 | `POST` | `/api/verification/submit` | Submit selfie & land document keys | Authenticated |
 | `GET` | `/api/verification/applications` | List applications with status filter | `verification_review` grant |
 | `POST` | `/api/verification/applications/<id>/photos/url` | View private document with audit reason | `verification_review` + Audit reason |
@@ -337,22 +340,29 @@ Every primary screen in the application explicitly handles all 7 states without 
 | `GET` | `/api/farms/<id>` | Get farm details with all attached plots | Owner Only |
 | `PUT` | `/api/farms/<id>` | Update farm metadata | Owner Only |
 | `DELETE`| `/api/farms/<id>` | Delete farm (cascades to plots & cycles) | Owner Only |
-| `GET` | `/api/farms/<id>/plots` | List plots under a specific farm | Owner Only |
-| `POST` | `/api/farms/<id>/plots` | Add new plot with soil and irrigation info | Owner Only |
+| `GET` | `/api/plots/farm/<id>` | List plots under a specific farm | Owner Only |
+| `POST` | `/api/plots/farm/<id>` | Add a plot to a farm | Owner Only |
 | `GET` | `/api/crop-cycles` | List active, harvested, and failed crop cycles | Owner Only |
-| `POST` | `/api/crop-cycles` | Start new crop cycle on a plot | Verified Farmer Only |
-| `PATCH`| `/api/crop-cycles/<id>/status` | Update cycle status (`harvested`, `failed`) | Owner Only |
+| `GET` | `/api/crop-cycles/plot/<id>` | List cycles for a plot | Owner Only |
+| `POST` | `/api/crop-cycles/plot/<id>` | Start a crop cycle on a plot | Verified Farmer Only |
+| `PATCH`| `/api/crop-cycles/<id>` | Update cycle dates or status | Owner Only |
+| `DELETE`| `/api/crop-cycles/<id>` | Delete a cycle | Owner Only |
 
 ### 8.4 Farm Activities & Weather (`/api/activities`, `/api/weather`, `/api/notifications`)
 | Method | Endpoint | Description | Access Control |
 |---|---|---|---|
 | `GET` | `/api/activities` | List scheduled activities (filterable by date/status) | Owner Only |
-| `POST` | `/api/activities` | Schedule an activity on a crop cycle | Owner Only |
-| `PATCH`| `/api/activities/<id>/status` | Mark activity as `completed` or `skipped` | Owner Only |
-| `GET` | `/api/weather/current` | Fetch current weather and 5-day forecast | Authenticated |
+| `GET` | `/api/activities/cycle/<id>` | List cycle activities | Owner Only |
+| `POST` | `/api/activities/cycle/<id>` | Schedule an activity on a crop cycle | Owner Only |
+| `PATCH`| `/api/activities/<id>` | Update an activity | Owner Only |
+| `POST` | `/api/activities/<id>/complete` | Mark activity completed | Owner Only |
+| `GET` | `/api/weather/forecast` | Fetch current or last-known forecast | Public |
 | `GET` | `/api/weather/advisories` | Fetch agronomic weather alerts for user's district | Authenticated |
 | `GET` | `/api/notifications` | List user's in-app alerts and notifications | Authenticated |
 | `PATCH`| `/api/notifications/<id>/read`| Mark an alert as read | Recipient Only |
+| `PATCH`| `/api/notifications/read-all`| Mark all caller notifications as read | Authenticated |
+
+External email notifications use SMTP (`SMTP_HOST`, `SMTP_PORT`, `SMTP_FROM_EMAIL`, and optional SMTP credentials). SMS notifications use AWS SNS and require an E.164 recipient phone number and AWS credentials. A requested external send fails explicitly when its provider is not configured.
 
 ### 8.5 Admin & Super Admin Control Panel (`/api/admin`, `/api/super-admin`)
 | Method | Endpoint | Description | Required Role / Guard |
@@ -527,3 +537,160 @@ Bhoomi-Agri-Application/
 ---
 
 *Document finalized & verified against production code on 2026-09-26. Bhoomi Platform Architecture v6.*
+
+
+1. Environment Variables Configuration
+The repository includes template files:
+
+
+
+backend/.env.example
+
+
+frontend/.env.example
+A. Backend Configuration (backend/.env)
+We have created
+
+backend/.env
+ for you. Here is what each variable means:
+
+env
+# ── Application Environment ───────────────────────────────────────────────
+FLASK_ENV=development
+FLASK_APP=wsgi.py
+FLASK_DEBUG=1
+# ── Cryptographic Secrets (Use 32+ char random strings in production) ─────
+SECRET_KEY=bhoomi-dev-secret-key-32-bytes-long-min!!
+JWT_SECRET_KEY=bhoomi-jwt-dev-secret-key-32-bytes-min!!
+# ── PostgreSQL Database Connection URL ───────────────────────────────────
+# Format: postgresql://<username>:<password>@<host>:<port>/<database_name>
+DATABASE_URL=postgresql://bhoomi:bhoomi@localhost:5432/bhoomi_db
+# ── Redis Cache & Celery Task Queue ──────────────────────────────────────
+REDIS_URL=redis://localhost:6379/0
+CELERY_BROKER_URL=redis://localhost:6379/0
+CELERY_RESULT_BACKEND=redis://localhost:6379/0
+RATELIMIT_STORAGE_URL=redis://localhost:6379/0
+# ── CORS (Frontend URLs allowed to connect with credentials) ──────────────
+CORS_ORIGINS=http://localhost:5173
+# ── AWS S3 Storage (Optional in local dev - mock storage used if blank) ───
+AWS_REGION=ap-south-1
+S3_BUCKET_PUBLIC=bhoomi-public-media
+S3_BUCKET_PRIVATE=bhoomi-verification-private
+# ── Weather API (Optional - OpenWeatherMap API key) ────────────────────────
+WEATHER_API_KEY=
+WEATHER_API_URL=https://api.openweathermap.org/data/2.5
+B. Frontend Configuration (frontend/.env)
+Located at
+
+frontend/.env
+:
+
+env
+# Points to the Flask backend API
+VITE_API_BASE_URL=http://localhost:8000/api
+2. Connecting to PostgreSQL
+You have two choices for your PostgreSQL database:
+
+Choice 1: Use Docker PostgreSQL (Easiest — No Local Postgres Installation Needed)
+If you have Docker installed, simply start PostgreSQL and Redis in the background:
+
+powershell
+cd "e:\Bhoomi app\infra"
+docker compose up -d postgres redis
+This starts:
+
+PostgreSQL on localhost:5432 with user bhoomi, password bhoomi, and database bhoomi_db.
+Redis on localhost:6379. The default DATABASE_URL=postgresql://bhoomi:bhoomi@localhost:5432/bhoomi_db will connect immediately!
+Choice 2: Use Your Existing Local PostgreSQL
+If you already have PostgreSQL installed on your Windows machine:
+
+Open psql or pgAdmin and run:
+sql
+CREATE DATABASE bhoomi_db;
+CREATE USER bhoomi WITH PASSWORD 'bhoomi';
+GRANT ALL PRIVILEGES ON DATABASE bhoomi_db TO bhoomi;
+Update the DATABASE_URL in
+
+backend/.env
+ to match your local credentials:
+env
+DATABASE_URL=postgresql://<your_postgres_username>:<your_postgres_password>@localhost:5432/bhoomi_db
+3. Running Database Migrations
+Once your PostgreSQL database is reachable:
+
+Open a terminal in the backend directory:
+
+powershell
+cd "e:\Bhoomi app\backend"
+# 1. Activate your virtual environment (if not already activated)
+# Windows:
+.venv\Scripts\activate
+# 2. Apply all database migrations to create all tables:
+flask db upgrade
+NOTE
+
+flask db upgrade applies the schema in
+
+backend/migrations/
+, creating all tables: users, farms, plots, crop_catalog, crop_cycles, farm_activities, farmer_verifications, admin_permission_grants, audit_logs, refresh_tokens, etc.
+
+4. Bootstrapping the Super Admin Account
+Run the dedicated CLI command to create your first Super Admin:
+
+powershell
+flask create-super-admin
+You will be prompted to enter:
+
+Full Name: e.g., Platform Administrator
+Email: e.g., admin@bhoomi.agri
+Phone Number: e.g., 9876543210
+Password: (minimum 8 characters)
+5. How to Run the Application
+You can run the entire platform either with Docker Compose or Natively.
+
+Method A: Full-Stack Docker Compose (1-Command Run)
+From the repo root:
+
+powershell
+cd "e:\Bhoomi app\infra"
+docker compose up --build
+This automatically boots:
+
+postgres (port 5432)
+redis (port 6379)
+bhoomi_web (Flask + Gunicorn, port 8000)
+bhoomi_worker (Celery worker for async tasks)
+bhoomi_beat (Celery Beat scheduler for daily activity reminders & weather polling)
+Then in a second terminal, start the frontend:
+
+powershell
+cd "e:\Bhoomi app\frontend"
+npm run dev
+Method B: Native Local Run (Terminal by Terminal)
+Terminal 1 — Backend API:
+powershell
+cd "e:\Bhoomi app\backend"
+.venv\Scripts\activate
+flask run --port=8000
+API runs at: http://localhost:8000
+
+Terminal 2 — Celery Worker (Optional in dev, required for scheduled reminders):
+powershell
+cd "e:\Bhoomi app\backend"
+.venv\Scripts\activate
+celery -A wsgi:celery_app worker --loglevel=info -P solo
+Terminal 3 — Frontend React SPA:
+powershell
+cd "e:\Bhoomi app\frontend"
+npm run dev
+Frontend runs at: http://localhost:5173
+
+6. Verifying the Connection
+Open your browser and test these URLs:
+
+Liveness Probe: http://localhost:8000/healthz
+Returns: {"status": "ok"}
+Readiness Probe (Verifies PostgreSQL connection): http://localhost:8000/readyz
+Returns: {"status": "ok", "checks": {"database": "ok"}}
+Frontend Application: http://localhost:5173
+Log in with the phone/password registered via flask create-super-admin or click Register to create a farmer account.

@@ -19,27 +19,17 @@ import React, { useState, useId } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { Eye, EyeOff, AlertCircle, WifiOff, ShieldX } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
+import { LANGUAGES, useLanguage } from "../../i18n/LanguageContext";
 import { FormField } from "../../design-system";
 import "./auth.scss";
 
 // ─── Supported Languages ──────────────────────────────────────────────────────
-
-const LANGUAGES = [
-  { value: "en", label: "English" },
-  { value: "hi", label: "हिन्दी" },
-  { value: "mr", label: "मराठी" },
-  { value: "pa", label: "ਪੰਜਾਬੀ" },
-  { value: "te", label: "తెలుగు" },
-  { value: "ta", label: "தமிழ்" },
-  { value: "bn", label: "বাংলা" },
-];
 
 // ─── Form State ───────────────────────────────────────────────────────────────
 
 interface FormValues {
   identifier: string; // phone or email
   password: string;
-  language: string;
 }
 
 interface FormErrors {
@@ -49,15 +39,15 @@ interface FormErrors {
 
 type ApiErrorType = "network" | "credentials" | "deactivated" | "server" | null;
 
-function validate(values: FormValues): FormErrors {
+function validate(values: FormValues, t: (text: string) => string): FormErrors {
   const errors: FormErrors = {};
   if (!values.identifier.trim()) {
-    errors.identifier = "Phone number or email is required.";
+    errors.identifier = t("Phone number or email is required.");
   }
   if (!values.password) {
-    errors.password = "Password is required.";
+    errors.password = t("Password is required.");
   } else if (values.password.length < 6) {
-    errors.password = "Password must be at least 6 characters.";
+    errors.password = t("Password must be at least 6 characters.");
   }
   return errors;
 }
@@ -66,12 +56,12 @@ function validate(values: FormValues): FormErrors {
 
 export function LoginScreen() {
   const { login, isLoading } = useAuth();
+  const { language, setLanguage, t } = useLanguage();
   const navigate = useNavigate();
 
   const [form, setForm] = useState<FormValues>({
     identifier: "",
     password: "",
-    language: "en",
   });
   const [errors, setErrors] = useState<FormErrors>({});
   const [showPassword, setShowPassword] = useState(false);
@@ -88,14 +78,14 @@ export function LoginScreen() {
     // Clear field error on change after first touch
     if (touched[field]) {
       const updated = { ...form, [field]: value };
-      const newErrors = validate(updated);
+      const newErrors = validate(updated, t);
       setErrors((prev) => ({ ...prev, [field]: newErrors[field as keyof FormErrors] }));
     }
   };
 
   const handleBlur = (field: keyof FormValues) => {
     setTouched((prev) => ({ ...prev, [field]: true }));
-    const newErrors = validate(form);
+    const newErrors = validate(form, t);
     setErrors((prev) => ({ ...prev, [field]: newErrors[field as keyof FormErrors] }));
   };
 
@@ -103,7 +93,7 @@ export function LoginScreen() {
     e.preventDefault();
     // Mark all fields as touched to surface any hidden errors
     setTouched({ identifier: true, password: true });
-    const validationErrors = validate(form);
+    const validationErrors = validate(form, t);
     if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors);
       return;
@@ -127,7 +117,7 @@ export function LoginScreen() {
       if (result.error.includes("Network error") || msg.includes("network")) {
         // State 7 — Unavailable / network error
         setApiErrorType("network");
-        setApiErrorMessage("Cannot reach the server. Check your connection and try again.");
+        setApiErrorMessage(t("Cannot reach the server. Check your connection and try again."));
       } else if (msg.includes("deactivated") || msg.includes("inactive")) {
         // State 6 — Permission denied (account deactivated)
         setApiErrorType("deactivated");
@@ -189,7 +179,7 @@ export function LoginScreen() {
             <span className="auth-header__leaf" aria-hidden="true">🌱</span>
             Bhoomi
           </div>
-          <p className="auth-header__subtitle">Your agriculture companion</p>
+          <p className="auth-header__subtitle">{t("Your agriculture companion")}</p>
         </header>
 
         {/* Form Body */}
@@ -200,13 +190,13 @@ export function LoginScreen() {
               htmlFor="login-language"
               style={{ display: "block", fontSize: "0.8125rem", fontWeight: 600, color: "var(--color-muted-text)", marginBottom: "4px" }}
             >
-              Language / भाषा
+              {t("Language / भाषा")}
             </label>
             <select
               id="login-language"
               className="select-field"
-              value={form.language}
-              onChange={(e) => handleChange("language", e.target.value)}
+              value={language}
+              onChange={(e) => { setLanguage(e.target.value); setErrors({}); setTouched({}); }}
             >
               {LANGUAGES.map((l) => (
                 <option key={l.value} value={l.value}>
@@ -227,7 +217,7 @@ export function LoginScreen() {
 
             {/* State 4 — Validation: phone/email */}
             <FormField
-              label="Phone number or email"
+              label={t("Phone number or email")}
               id={identifierId}
               required
               error={touched.identifier ? errors.identifier : undefined}
@@ -237,7 +227,7 @@ export function LoginScreen() {
                 type="text"
                 className="input-field"
                 autoComplete="username"
-                placeholder="Enter your phone or email"
+                placeholder={t("Enter your phone or email")}
                 value={form.identifier}
                 disabled={isLoading}
                 onChange={(e) => handleChange("identifier", e.target.value)}
@@ -248,7 +238,7 @@ export function LoginScreen() {
 
             {/* Password with show/hide toggle */}
             <FormField
-              label="Password"
+              label={t("Password")}
               id={passwordId}
               required
               error={touched.password ? errors.password : undefined}
@@ -259,7 +249,7 @@ export function LoginScreen() {
                   type={showPassword ? "text" : "password"}
                   className="input-field"
                   autoComplete="current-password"
-                  placeholder="Enter your password"
+                  placeholder={t("Enter your password")}
                   value={form.password}
                   disabled={isLoading}
                   onChange={(e) => handleChange("password", e.target.value)}
@@ -270,7 +260,7 @@ export function LoginScreen() {
                 <button
                   type="button"
                   className="input-with-toggle__toggle"
-                  aria-label={showPassword ? "Hide password" : "Show password"}
+                  aria-label={showPassword ? t("Hide password") : t("Show password")}
                   onClick={() => setShowPassword((v) => !v)}
                   tabIndex={0}
                 >
@@ -290,10 +280,10 @@ export function LoginScreen() {
               {isLoading ? (
                 <>
                   <span className="auth-spinner" aria-hidden="true" />
-                  <span>Signing in…</span>
+                  <span>{t("Signing in…")}</span>
                 </>
               ) : (
-                "Sign in"
+                t("Sign in")
               )}
             </button>
           </form>
@@ -301,9 +291,9 @@ export function LoginScreen() {
           {/* Footer — register link */}
           <div className="auth-footer">
             <p>
-              Don't have an account?{" "}
+              {t("Don't have an account?")}{" "}
               <Link to="/register" className="auth-footer__link">
-                Create account
+                {t("Create account")}
               </Link>
             </p>
           </div>

@@ -8,7 +8,6 @@ from dotenv import load_dotenv
 load_dotenv()
 
 from app import create_app
-from app.celery_app import make_celery
 
 # Determine environment
 env = os.getenv("FLASK_ENV", "development")
@@ -16,8 +15,8 @@ env = os.getenv("FLASK_ENV", "development")
 # Create Flask app
 flask_app = create_app(env)
 
-# Create Celery app bound to Flask context
-celery_app = make_celery(flask_app)
+# Celery is created by the application factory and bound to its app context.
+celery_app = flask_app.extensions["celery"]
 
 # Alias for `flask run` / gunicorn
 application = flask_app

@@ -69,15 +69,44 @@ def platform_role_required(*roles: str) -> Callable:
     return decorator
 
 
-def permission_required(permission_key: str, allow_super_admin_bypass: bool = True) -> Callable:
+def user_type_required(*user_types: str) -> Callable:
+    """Require the authenticated account's current domain role."""
+    def decorator(fn: Callable) -> Callable:
+        @wraps(fn)
+        def wrapper(*args: Any, **kwargs: Any) -> Any:
+            try:
+                verify_jwt_in_request()
+            except Exception:
+                return jsonify({
+                    "error": "authentication_required",
+                    "message": "A valid session is required.",
+                }), 401
+
+            user = current_user
+            if user is None or not user.is_active:
+                return jsonify({
+                    "error": "authentication_required",
+                    "message": "A valid session is required.",
+                }), 401
+            if user.user_type not in user_types:
+                return jsonify({
+                    "error": "forbidden",
+                    "message": "Your account type cannot access this resource.",
+                    "required_user_types": list(user_types),
+                    "your_user_type": user.user_type,
+                }), 403
+            return fn(*args, **kwargs)
+        return wrapper
+    return decorator
+
+
+def permission_required(permission_key: str, allow_super_admin_bypass: bool = False) -> Callable:
     """
     Decorator that checks for an **active** ``AdminPermissionGrant`` row.
 
-    Super Admins bypass the grant check for standard permissions if
-    allow_super_admin_bypass is True.
-    For sensitive operations like verification review (§5, §7.4),
-    allow_super_admin_bypass=False enforces that Super Admins also require
-    an explicit active grant.
+    Super Admins require explicit grants by default. Set
+    ``allow_super_admin_bypass=True`` only for non-sensitive capabilities that
+    the platform policy deliberately grants to every Super Admin by role.
     Users always receive 403.
 
     Must be applied AFTER ``@jwt_required()`` and ``@platform_role_required("admin", "super_admin")``.

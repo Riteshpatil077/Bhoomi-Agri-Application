@@ -3,13 +3,48 @@ import { NavLink } from "react-router-dom";
 import {
   LayoutDashboard,
   MapPin,
+  Sprout,
   CalendarCheck2,
   CloudSun,
   MoreHorizontal,
+  ShieldAlert,
 } from "lucide-react";
+import { useAuth } from "../../../context/AuthContext";
+import { useLanguage } from "../../../i18n/LanguageContext";
 import "./BottomNavigation.scss";
 
 export const BottomNavigation: React.FC = () => {
+  const { user } = useAuth();
+  const { t } = useLanguage();
+  if (!user) return null;
+
+  if (user.user_type !== "farmer") {
+    return (
+      <nav className="bottom-nav" aria-label="Mobile Navigation">
+        <NavLink to="/dashboard" className={({ isActive }) => `bottom-nav__item ${isActive ? "bottom-nav__item--active" : ""}`}>
+          <LayoutDashboard size={20} className="bottom-nav__icon" />
+          <span className="bottom-nav__label">{t("Home")}</span>
+        </NavLink>
+        {user.platform_role === "admin" && (
+          <NavLink to="/admin" className={({ isActive }) => `bottom-nav__item ${isActive ? "bottom-nav__item--active" : ""}`}>
+            <ShieldAlert size={20} className="bottom-nav__icon" />
+            <span className="bottom-nav__label">{t("Admin Portal")}</span>
+          </NavLink>
+        )}
+        {user.platform_role === "super_admin" && (
+          <NavLink to="/super-admin" className={({ isActive }) => `bottom-nav__item ${isActive ? "bottom-nav__item--active" : ""}`}>
+            <ShieldAlert size={20} className="bottom-nav__icon" />
+            <span className="bottom-nav__label">{t("Governance")}</span>
+          </NavLink>
+        )}
+        <NavLink to="/profile" className={({ isActive }) => `bottom-nav__item ${isActive ? "bottom-nav__item--active" : ""}`}>
+          <MoreHorizontal size={20} className="bottom-nav__icon" />
+          <span className="bottom-nav__label">{t("Profile")}</span>
+        </NavLink>
+      </nav>
+    );
+  }
+
   return (
     <nav className="bottom-nav" aria-label="Mobile Navigation">
       <NavLink
@@ -19,7 +54,7 @@ export const BottomNavigation: React.FC = () => {
         }
       >
         <LayoutDashboard size={20} className="bottom-nav__icon" />
-        <span className="bottom-nav__label">Home</span>
+        <span className="bottom-nav__label">{t("Home")}</span>
       </NavLink>
 
       <NavLink
@@ -29,7 +64,17 @@ export const BottomNavigation: React.FC = () => {
         }
       >
         <MapPin size={20} className="bottom-nav__icon" />
-        <span className="bottom-nav__label">Farms</span>
+        <span className="bottom-nav__label">{t("Farms")}</span>
+      </NavLink>
+
+      <NavLink
+        to="/crop-cycles"
+        className={({ isActive }) =>
+          `bottom-nav__item ${isActive ? "bottom-nav__item--active" : ""}`
+        }
+      >
+        <Sprout size={20} className="bottom-nav__icon" />
+        <span className="bottom-nav__label">{t("Crop Cycles")}</span>
       </NavLink>
 
       <NavLink
@@ -39,7 +84,7 @@ export const BottomNavigation: React.FC = () => {
         }
       >
         <CalendarCheck2 size={20} className="bottom-nav__icon" />
-        <span className="bottom-nav__label">Activities</span>
+        <span className="bottom-nav__label">{t("Activities")}</span>
       </NavLink>
 
       <NavLink
@@ -49,8 +94,18 @@ export const BottomNavigation: React.FC = () => {
         }
       >
         <CloudSun size={20} className="bottom-nav__icon" />
-        <span className="bottom-nav__label">Weather</span>
+        <span className="bottom-nav__label">{t("Weather")}</span>
       </NavLink>
+
+      {(user.platform_role === "admin" || user.platform_role === "super_admin") && (
+        <NavLink
+          to={user.platform_role === "super_admin" ? "/super-admin" : "/admin"}
+          className={({ isActive }) => `bottom-nav__item ${isActive ? "bottom-nav__item--active" : ""}`}
+        >
+          <ShieldAlert size={20} className="bottom-nav__icon" />
+          <span className="bottom-nav__label">{user.platform_role === "super_admin" ? t("Governance") : t("Admin Portal")}</span>
+        </NavLink>
+      )}
 
       <NavLink
         to="/profile"
@@ -59,7 +114,7 @@ export const BottomNavigation: React.FC = () => {
         }
       >
         <MoreHorizontal size={20} className="bottom-nav__icon" />
-        <span className="bottom-nav__label">More</span>
+        <span className="bottom-nav__label">{t("More")}</span>
       </NavLink>
     </nav>
   );

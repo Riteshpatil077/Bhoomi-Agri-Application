@@ -161,7 +161,11 @@ class TestWeatherEndpoints:
         assert data["status"] == "stale"
         assert data["is_stale"] is True
         assert "Data unavailable, last known good at" in data["message"]
-        assert past_update.strftime("%Y-%m-%d") in data["message"]
+        expected_utc_time = past_update.astimezone(timezone.utc).strftime(
+            "%Y-%m-%d %H:%M:%S UTC"
+        )
+        assert data["message"].endswith(expected_utc_time)
+        assert data["provenance"]["source_updated_at"].endswith("+00:00")
 
         # Last known good payload is still provided for reference
         assert data["forecast"] is not None
@@ -198,3 +202,58 @@ class TestWeatherEndpoints:
         assert data["total"] >= 1
         assert data["advisories"][0]["payload"]["severity"] == "High"
         assert data["advisories"][0]["is_valid"] is True
+
+    def test_city_search_fetches_weather_for_resolved_city(self, app, client):
+        """City searches use their resolved coordinates instead of a preset cache."""
+        from app.utils.weather import WeatherService
+
+        location = {
+            "name": "Mumbai", "state": "Maharashtra", "country": "IN",
+            "latitude": 19.076, "longitude": 72.8777,
+        }
+        with patch.object(WeatherService, "search_city", return_value=[location]), patch.object(
+            WeatherService, "fetch_forecast_for_region", wraps=WeatherService.fetch_forecast_for_region
+        ) as fetch:
+            response = client.get("/api/weather/forecast?city=Mumbai")
+
+        assert response.status_code == 200
+        data = response.get_json()
+        assert data["status"] == "current"
+        assert data["location"]["name"] == "Mumbai"
+        assert data["forecast"]["payload"]["coordinates"] == {
+            "latitude": 19.076, "longitude": 72.8777,
+        }
+        fetch.assert_called_once()
+
+    def test_city_search_returns_not_found_for_unmatched_city(self, client):
+        from app.utils.weather import WeatherService
+
+        with patch.object(WeatherService, "search_city", return_value=[]):
+            response = client.get("/api/weather/forecast?city=NoSuchCity")
+
+        assert response.status_code == 200
+        assert response.get_json()["status"] == "not_found"
+
+    def test_city_suggestions_returns_provider_locations(self, client):
+        from app.utils.weather import WeatherService
+
+        locations = [{
+            "name": "Nashik", "state": "Maharashtra", "country": "IN",
+            "latitude": 19.9975, "longitude": 73.7898,
+        }]
+        with patch.object(WeatherService, "search_city", return_value=locations):
+            response = client.get("/api/weather/cities?q=Nas")
+
+        assert response.status_code == 200
+        assert response.get_json()["suggestions"] == locations
+
+
+def test_weather_service_reports_missing_provider_key_as_unavailable(app):
+    """A non-test environment must not turn hard-coded fixture data into a forecast."""
+    from app.utils.weather import WeatherFetchError, WeatherService
+
+    with app.app_context():
+        app.config["TESTING"] = False
+        app.config["WEATHER_API_KEY"] = ""
+        with pytest.raises(WeatherFetchError, match="not configured"):
+            WeatherService.fetch_forecast_for_region("IN-MH-PUN")

@@ -5,13 +5,16 @@ Implements CRUD for Plot entities with parent-farm ownership verification per §
 from __future__ import annotations
 
 import uuid
+from typing import Any
 from flask import jsonify, request
 from flask_jwt_extended import jwt_required, current_user
 from marshmallow import ValidationError
+from sqlalchemy.exc import IntegrityError
 
 from app.extensions import db
 from app.models.farm import Farm, Plot
 from app.schemas.farm import CreatePlotSchema, UpdatePlotSchema
+from app.rbac import user_type_required
 
 from . import plots_bp
 
@@ -48,6 +51,7 @@ def _verify_plot_owner(plot_id: uuid.UUID) -> tuple[Plot | None, tuple[Any, int]
 
 @plots_bp.route("/farm/<uuid:farm_id>", methods=["GET"])
 @jwt_required()
+@user_type_required("farmer")
 def list_plots_for_farm(farm_id: uuid.UUID):
     """
     GET /api/plots/farm/<farm_id>
@@ -70,6 +74,7 @@ def list_plots_for_farm(farm_id: uuid.UUID):
 
 @plots_bp.route("/farm/<uuid:farm_id>", methods=["POST"])
 @jwt_required()
+@user_type_required("farmer")
 def create_plot(farm_id: uuid.UUID):
     """
     POST /api/plots/farm/<farm_id>
@@ -86,13 +91,33 @@ def create_plot(farm_id: uuid.UUID):
     except ValidationError as err_val:
         return jsonify({"error": "validation_error", "messages": err_val.messages}), 422
 
+    request_id = data.get("client_request_id")
+    if request_id:
+        existing = Plot.query.filter_by(
+            farm_id=farm.id, client_request_id=str(request_id)
+        ).first()
+        if existing:
+            return jsonify({"message": "Plot was already created.", "plot": existing.to_dict()}), 200
+
     plot = Plot(
         farm_id=farm.id,
+        client_request_id=str(request_id) if request_id else None,
         plot_name=data["plot_name"],
         area_acres=data["area_acres"],
+        area_is_estimated=data.get("area_is_estimated", False),
     )
     db.session.add(plot)
-    db.session.commit()
+    try:
+        db.session.commit()
+    except IntegrityError:
+        db.session.rollback()
+        if request_id:
+            existing = Plot.query.filter_by(
+                farm_id=farm.id, client_request_id=str(request_id)
+            ).first()
+            if existing:
+                return jsonify({"message": "Plot was already created.", "plot": existing.to_dict()}), 200
+        raise
 
     return jsonify({
         "message": "Plot created successfully.",
@@ -102,6 +127,7 @@ def create_plot(farm_id: uuid.UUID):
 
 @plots_bp.route("/<uuid:plot_id>", methods=["GET"])
 @jwt_required()
+@user_type_required("farmer")
 def get_plot(plot_id: uuid.UUID):
     """
     GET /api/plots/<plot_id>
@@ -119,6 +145,7 @@ def get_plot(plot_id: uuid.UUID):
 
 @plots_bp.route("/<uuid:plot_id>", methods=["PUT", "PATCH"])
 @jwt_required()
+@user_type_required("farmer")
 def update_plot(plot_id: uuid.UUID):
     """
     PATCH/PUT /api/plots/<plot_id>
@@ -139,6 +166,8 @@ def update_plot(plot_id: uuid.UUID):
         plot.plot_name = data["plot_name"]
     if "area_acres" in data:
         plot.area_acres = data["area_acres"]
+    if "area_is_estimated" in data:
+        plot.area_is_estimated = data["area_is_estimated"]
 
     db.session.commit()
 
@@ -150,6 +179,7 @@ def update_plot(plot_id: uuid.UUID):
 
 @plots_bp.route("/<uuid:plot_id>", methods=["DELETE"])
 @jwt_required()
+@user_type_required("farmer")
 def delete_plot(plot_id: uuid.UUID):
     """
     DELETE /api/plots/<plot_id>

@@ -28,9 +28,11 @@ import {
   AlertCircle,
   ShieldAlert,
   X,
+  MapPin,
 } from "lucide-react";
 
 import { useAuth } from "../../context/AuthContext";
+import { useLanguage } from "../../i18n/LanguageContext";
 import {
   AppShell,
   FarmCard,
@@ -47,24 +49,21 @@ import {
   type Farm,
   type CreateFarmPayload,
 } from "../../api/farms";
+import { createRequestId } from "../../api/requestId";
+import { countQueuedFarms, enqueueFarm, syncQueuedFarms } from "../../api/offlineFarmQueue";
 
 import "./farms.scss";
 
-const COMMON_SOILS = [
-  "Alluvial Soil",
-  "Black Soil (Regur)",
-  "Red & Yellow Soil",
-  "Laterite Soil",
-  "Arid / Desert Soil",
-  "Saline Soil",
-  "Peaty / Organic Soil",
-  "Clay Loam",
-  "Sandy Loam",
-  "Silt Loam",
-];
+const COMMON_SOILS = ["Black Soil (Regur)", "Red Soil", "Alluvial Soil", "Laterite Soil"];
+
+function removeDraftSafely(key: string | null): void {
+  if (!key) return;
+  try { localStorage.removeItem(key); } catch { /* Browser storage may be disabled. */ }
+}
 
 export function MyFarmsScreen() {
   const { user, logout } = useAuth();
+  const { t } = useLanguage();
   const { toast } = useToast();
 
   // ─── Data State ─────────────────────────────────────────────────────────────
@@ -80,16 +79,41 @@ export function MyFarmsScreen() {
   // ─── Modal State (Create / Edit) ────────────────────────────────────────────
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [editingFarm, setEditingFarm] = useState<Farm | null>(null);
-  const [formName, setFormName] = useState<string>("");
-  const [formLatitude, setFormLatitude] = useState<string>("");
-  const [formLongitude, setFormLongitude] = useState<string>("");
-  const [formSoilType, setFormSoilType] = useState<string>("");
+  const draftKey = user?.id ? `bhoomi:farm-draft:${user.id}` : null;
+  let savedDraft: { name?: string; location?: string; soil?: string; latitude?: string; longitude?: string; requestId?: string } | null = null;
+  if (draftKey) {
+    try {
+      savedDraft = JSON.parse(localStorage.getItem(draftKey) ?? "null");
+    } catch {
+      removeDraftSafely(draftKey);
+    }
+  }
+  const [formName, setFormName] = useState<string>(savedDraft?.name ?? "");
+  const [formLatitude, setFormLatitude] = useState<string>(savedDraft?.latitude ?? "");
+  const [formLongitude, setFormLongitude] = useState<string>(savedDraft?.longitude ?? "");
+  const [formLocationName, setFormLocationName] = useState<string>(savedDraft?.location ?? "");
+  const [formSoilType, setFormSoilType] = useState<string>(savedDraft?.soil ?? "");
   const [formErrors, setFormErrors] = useState<{
     name?: string;
-    latitude?: string;
-    longitude?: string;
+    location?: string;
   }>({});
   const [isSaving, setIsSaving] = useState<boolean>(false);
+  const [isLocating, setIsLocating] = useState<boolean>(false);
+  const [formRequestId, setFormRequestId] = useState(
+    savedDraft?.requestId && /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(savedDraft.requestId)
+      ? savedDraft.requestId
+      : createRequestId()
+  );
+  const [queuedFarmCount, setQueuedFarmCount] = useState(() => user?.id ? countQueuedFarms(user.id) : 0);
+
+  useEffect(() => {
+    if (!draftKey || editingFarm || !isModalOpen) return;
+    try {
+      localStorage.setItem(draftKey, JSON.stringify({ name: formName, location: formLocationName, soil: formSoilType, latitude: formLatitude, longitude: formLongitude, requestId: formRequestId || createRequestId() }));
+    } catch {
+      // Keep form use available when browser storage is disabled or full.
+    }
+  }, [draftKey, editingFarm, isModalOpen, formName, formLocationName, formSoilType, formLatitude, formLongitude, formRequestId]);
 
   // ─── Delete Dialog State ───────────────────────────────────────────────────
   const [deletingFarm, setDeletingFarm] = useState<Farm | null>(null);
@@ -125,13 +149,31 @@ export function MyFarmsScreen() {
     loadFarms();
   }, []);
 
+  useEffect(() => {
+    if (!user?.id) return;
+    const sync = async () => {
+      const result = await syncQueuedFarms(user.id);
+      setQueuedFarmCount(result.remaining);
+      if (result.synced > 0) await loadFarms();
+    };
+    window.addEventListener("online", sync);
+    if (navigator.onLine) void sync();
+    return () => window.removeEventListener("online", sync);
+  }, [user?.id]);
+
   // ─── Modal Open / Close Handlers ───────────────────────────────────────────
   const openCreateModal = () => {
     setEditingFarm(null);
-    setFormName("");
-    setFormLatitude("");
-    setFormLongitude("");
-    setFormSoilType("");
+    let hasDraft = false;
+    try { hasDraft = Boolean(draftKey && localStorage.getItem(draftKey)); } catch { /* Continue without draft storage. */ }
+    if (!hasDraft) {
+      setFormName(user?.full_name?.trim() ? `${user.full_name.trim().split(/\s+/)[0]}'s Farm` : "");
+      setFormLatitude("");
+      setFormLongitude("");
+      setFormLocationName("");
+      setFormSoilType("");
+      setFormRequestId(createRequestId());
+    }
     setFormErrors({});
     setIsModalOpen(true);
   };
@@ -141,6 +183,7 @@ export function MyFarmsScreen() {
     setFormName(farm.name);
     setFormLatitude(farm.latitude != null ? String(farm.latitude) : "");
     setFormLongitude(farm.longitude != null ? String(farm.longitude) : "");
+    setFormLocationName(farm.location_name || "");
     setFormSoilType(farm.soil_type || "");
     setFormErrors({});
     setIsModalOpen(true);
@@ -152,9 +195,30 @@ export function MyFarmsScreen() {
     setFormErrors({});
   };
 
+  const useCurrentLocation = () => {
+    if (!navigator.geolocation) {
+      toast.error("Location is not available in this browser. Enter a place name instead.");
+      return;
+    }
+    setIsLocating(true);
+    navigator.geolocation.getCurrentPosition(
+      ({ coords }) => {
+        setFormLatitude(String(coords.latitude));
+        setFormLongitude(String(coords.longitude));
+        if (!formLocationName.trim()) setFormLocationName("Current location");
+        setIsLocating(false);
+      },
+      (error) => {
+        toast.error(error.code === error.PERMISSION_DENIED ? "Allow location access or enter a place name." : "Could not determine your location. Try again or enter a place name.");
+        setIsLocating(false);
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
+    );
+  };
+
   // ─── Form Validation (§12.4 State 4) ────────────────────────────────────────
   const validateForm = (): boolean => {
-    const errs: { name?: string; latitude?: string; longitude?: string } = {};
+    const errs: { name?: string; location?: string } = {};
 
     if (!formName.trim()) {
       errs.name = "Farm name is required.";
@@ -162,19 +226,7 @@ export function MyFarmsScreen() {
       errs.name = "Farm name must be at least 2 characters long.";
     }
 
-    if (formLatitude.trim()) {
-      const lat = parseFloat(formLatitude);
-      if (isNaN(lat) || lat < -90 || lat > 90) {
-        errs.latitude = "Latitude must be a valid number between -90 and 90.";
-      }
-    }
-
-    if (formLongitude.trim()) {
-      const lng = parseFloat(formLongitude);
-      if (isNaN(lng) || lng < -180 || lng > 180) {
-        errs.longitude = "Longitude must be a valid number between -180 and 180.";
-      }
-    }
+    if (!formLocationName.trim()) errs.location = "Enter a village, town, or use GPS to locate your farm.";
 
     setFormErrors(errs);
     return Object.keys(errs).length === 0;
@@ -189,9 +241,12 @@ export function MyFarmsScreen() {
 
     const payload: CreateFarmPayload = {
       name: formName.trim(),
+      client_request_id: !editingFarm ? formRequestId || createRequestId() : undefined,
       latitude: formLatitude.trim() ? parseFloat(formLatitude) : null,
       longitude: formLongitude.trim() ? parseFloat(formLongitude) : null,
       soil_type: formSoilType.trim() || null,
+      location_name: formLocationName.trim() || null,
+      soil_type_source: "farmer_provided",
     };
 
     if (editingFarm) {
@@ -210,13 +265,38 @@ export function MyFarmsScreen() {
           prev.map((f) => (f.id === editingFarm.id ? { ...f, ...res.data!.farm } : f))
         );
         closeModal();
+        removeDraftSafely(draftKey);
       }
     } else {
       // Create
+      if (!navigator.onLine && user?.id) {
+        if (!enqueueFarm(user.id, payload)) {
+          setIsSaving(false);
+          toast.error("This browser could not save the farm offline. Free device storage or reconnect and retry.");
+          return;
+        }
+        setQueuedFarmCount(countQueuedFarms(user.id));
+        setIsSaving(false);
+        toast.success("Farm saved on this device and will sync when you reconnect.");
+        removeDraftSafely(draftKey);
+        closeModal();
+        return;
+      }
       const res = await createFarm(payload);
       setIsSaving(false);
 
       if (res.error) {
+        if (res.status === 0 && user?.id) {
+          if (!enqueueFarm(user.id, payload)) {
+            toast.error("Connection lost, and this browser could not queue the farm. Keep this form open and retry.");
+            return;
+          }
+          setQueuedFarmCount(countQueuedFarms(user.id));
+          toast.success("Connection lost. Farm saved on this device and will sync when you reconnect.");
+          removeDraftSafely(draftKey);
+          closeModal();
+          return;
+        }
         toast.error(res.error);
         return;
       }
@@ -225,6 +305,7 @@ export function MyFarmsScreen() {
         toast.success(`Farm "${res.data.farm.name}" created successfully.`);
         setFarms((prev) => [res.data!.farm, ...prev]);
         closeModal();
+        removeDraftSafely(draftKey);
       }
     }
   };
@@ -354,10 +435,10 @@ export function MyFarmsScreen() {
             <div className="farms-header__titles">
               <h1 className="farms-header__title">
                 <Sprout size={28} style={{ color: "#2F5D3A" }} />
-                My Agricultural Farms
+                {t("My Agricultural Farms")}
               </h1>
               <p className="farms-header__subtitle">
-                Manage your land holdings, register boundary plots, and track agricultural cycles.
+                {t("Manage your land holdings, register boundary plots, and track agricultural cycles.")}
               </p>
             </div>
             <div className="farms-header__actions">
@@ -367,10 +448,12 @@ export function MyFarmsScreen() {
                 className="btn btn-primary"
                 onClick={openCreateModal}
               >
-                <Plus size={16} /> Add New Farm
+                <Plus size={16} /> {t("Add New Farm")}
               </button>
             </div>
           </header>
+
+          {queuedFarmCount > 0 && <div role="status" className="farm-alert farm-alert--warning">{queuedFarmCount} farm {queuedFarmCount === 1 ? "change is" : "changes are"} saved on this device and waiting to sync.</div>}
 
           {/* ─────────────────────────────────────────────────────────────────── */}
           {/* UI STATE 5: Top-Level API / Network Error                           */}
@@ -479,8 +562,8 @@ export function MyFarmsScreen() {
             /* UI STATE 2: Empty State (First-run)                             */
             /* ─────────────────────────────────────────────────────────────── */
             <EmptyState
-              title="No Farms Registered Yet"
-              description="Register your first agricultural land holding to start subdividing it into plots, recording crop cycles, and accessing localized weather forecasts."
+              title={t("No Farms Registered Yet")}
+              description={t("Start by creating a farm, adding a plot, and logging your first sowing.")}
               icon={Sprout}
               action={
                 <button
@@ -488,7 +571,7 @@ export function MyFarmsScreen() {
                   className="btn btn-primary"
                   onClick={openCreateModal}
                 >
-                  <Plus size={16} /> Add Your First Farm
+                  <Plus size={16} /> {t("Add Your First Farm")}
                 </button>
               }
             />
@@ -508,7 +591,7 @@ export function MyFarmsScreen() {
                 <header className="farm-modal__header">
                   <h2 className="farm-modal__title" id="modal-farm-title">
                     <Sprout size={20} style={{ color: "#2F5D3A" }} />
-                    {editingFarm ? "Edit Farm Details" : "Register New Farm"}
+                    {editingFarm ? t("Edit Farm Details") : t("Register New Farm")}
                   </h2>
                   <button
                     type="button"
@@ -524,11 +607,11 @@ export function MyFarmsScreen() {
                   <div className="farm-modal__body">
                     {/* Farm Name Field */}
                     <FormField
-                      label="Farm Name"
+                      label={t("Farm Name")}
                       id="farm-name-input"
                       required
                       error={formErrors.name}
-                      hint="E.g. Greenfield Valley, East Acre Estate"
+                      hint={t("E.g. Greenfield Valley, East Acre Estate")}
                     >
                       <input
                         type="text"
@@ -536,71 +619,29 @@ export function MyFarmsScreen() {
                         className="input-field"
                         value={formName}
                         onChange={(e) => setFormName(e.target.value)}
-                        placeholder="Enter farm name"
+                        placeholder={t("Enter farm name")}
                         disabled={isSaving}
                       />
                     </FormField>
 
-                    {/* Soil Type Field */}
-                    <FormField
-                      label="Primary Soil Type"
-                      id="farm-soil-input"
-                      hint="Optional agronomic classification"
-                    >
-                      <select
-                        id="farm-soil-input"
-                        className="select-field"
-                        value={formSoilType}
-                        onChange={(e) => setFormSoilType(e.target.value)}
-                        disabled={isSaving}
-                      >
-                        <option value="">Select or leave blank</option>
-                        {COMMON_SOILS.map((soil) => (
-                          <option key={soil} value={soil}>
-                            {soil}
-                          </option>
-                        ))}
-                      </select>
+                    <FormField label={t("Farm location")} id="farm-location-input" required error={formErrors.location ? t(formErrors.location) : undefined} hint={t("Use GPS or enter your village, town, or address.")}>
+                      <input id="farm-location-input" list="farm-location-suggestions" className="input-field" value={formLocationName} onChange={(e) => setFormLocationName(e.target.value)} placeholder="Village or town" disabled={isSaving} />
+                      <datalist id="farm-location-suggestions">
+                        {Array.from(new Set(farms.map((farm) => farm.location_name).filter((location): location is string => Boolean(location?.trim())))).map((location) => <option key={location} value={location} />)}
+                      </datalist>
                     </FormField>
+                    <button type="button" className="btn btn-outline btn-sm" onClick={useCurrentLocation} disabled={isSaving || isLocating}>
+                      <MapPin size={14} /> {isLocating ? "Finding location…" : formLatitude && formLongitude ? "Refresh GPS location" : "Use my current location"}
+                    </button>
+                    {(formLatitude || formLongitude) && <p role="status" className="farm-location-status">GPS pin saved with this farm.</p>}
 
-                    {/* Coordinates (Lat / Long) */}
-                    <div className="farm-modal__row">
-                      <FormField
-                        label="Latitude"
-                        id="farm-lat-input"
-                        error={formErrors.latitude}
-                        hint="Decimal degrees (-90 to 90)"
-                      >
-                        <input
-                          type="number"
-                          step="any"
-                          id="farm-lat-input"
-                          className="input-field"
-                          value={formLatitude}
-                          onChange={(e) => setFormLatitude(e.target.value)}
-                          placeholder="e.g. 18.5204"
-                          disabled={isSaving}
-                        />
-                      </FormField>
-
-                      <FormField
-                        label="Longitude"
-                        id="farm-lng-input"
-                        error={formErrors.longitude}
-                        hint="Decimal degrees (-180 to 180)"
-                      >
-                        <input
-                          type="number"
-                          step="any"
-                          id="farm-lng-input"
-                          className="input-field"
-                          value={formLongitude}
-                          onChange={(e) => setFormLongitude(e.target.value)}
-                          placeholder="e.g. 73.8567"
-                          disabled={isSaving}
-                        />
-                      </FormField>
-                    </div>
+                    <fieldset style={{ border: 0, padding: 0, margin: "1rem 0 0" }}>
+                      <legend style={{ fontWeight: 600, marginBottom: 8 }}>{t("Soil type")} <span style={{ fontWeight: 400, color: "#5B6E60" }}>({t("optional")})</span></legend>
+                      <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 8 }}>
+                        {COMMON_SOILS.map((soil) => <button key={soil} type="button" className={`btn ${formSoilType === soil ? "btn-primary" : "btn-outline"}`} onClick={() => setFormSoilType(formSoilType === soil ? "" : soil)} disabled={isSaving} aria-pressed={formSoilType === soil}>{soil}</button>)}
+                      </div>
+                      <p style={{ color: "#5B6E60", fontSize: 13, marginTop: 8 }}>Choose what you know, or leave blank. Verified regional soil suggestions are not configured yet.</p>
+                    </fieldset>
                   </div>
 
                   <footer className="farm-modal__footer">

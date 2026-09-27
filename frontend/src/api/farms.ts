@@ -16,7 +16,10 @@ export interface Farm {
   name: string;
   latitude: number | null;
   longitude: number | null;
+  location_name: string | null;
   soil_type: string | null;
+  soil_type_source: "farmer_provided" | "suggested";
+  soil_region: string | null;
   plots_count?: number;
   plots?: Plot[];
   created_at: string;
@@ -28,6 +31,7 @@ export interface Plot {
   farm_id: string;
   plot_name: string;
   area_acres: number;
+  area_is_estimated: boolean;
   active_cycles_count?: number;
   crop_cycles?: CropCycleSummary[];
   created_at: string;
@@ -47,27 +51,37 @@ export interface CropCycleSummary {
 }
 
 export interface CreateFarmPayload {
+  client_request_id?: string;
   name: string;
   latitude?: number | null;
   longitude?: number | null;
+  location_name?: string | null;
   soil_type?: string | null;
+  soil_type_source?: "farmer_provided" | "suggested";
+  soil_region?: string | null;
 }
 
 export interface UpdateFarmPayload {
   name?: string;
   latitude?: number | null;
   longitude?: number | null;
+  location_name?: string | null;
   soil_type?: string | null;
+  soil_type_source?: "farmer_provided" | "suggested";
+  soil_region?: string | null;
 }
 
 export interface CreatePlotPayload {
+  client_request_id?: string;
   plot_name: string;
   area_acres: number;
+  area_is_estimated?: boolean;
 }
 
 export interface UpdatePlotPayload {
   plot_name?: string;
   area_acres?: number;
+  area_is_estimated?: boolean;
 }
 
 // ─── Farm Endpoints ───────────────────────────────────────────────────────────

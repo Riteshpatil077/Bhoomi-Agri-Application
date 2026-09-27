@@ -4,22 +4,23 @@
  * Auth context is provided by AuthProvider (wraps this in App.tsx).
  */
 import { BrowserRouter, Routes, Route, Navigate, Outlet } from "react-router-dom";
+import { lazy, Suspense } from "react";
 import { useAuth } from "../context/AuthContext";
-import { LoginScreen } from "../screens/auth/LoginScreen";
-import { RegisterScreen } from "../screens/auth/RegisterScreen";
-import { ProfileScreen } from "../screens/auth/ProfileScreen";
-import { VerificationScreen } from "../screens/verification/VerificationScreen";
-import { MyFarmsScreen } from "../screens/farms/MyFarmsScreen";
-import { FarmDetailsScreen } from "../screens/farms/FarmDetailsScreen";
-import { PlotDetailsScreen } from "../screens/farms/PlotDetailsScreen";
-import { CropCyclesScreen } from "../screens/crop-cycles/CropCyclesScreen";
-import { CropCycleDetailScreen } from "../screens/crop-cycles/CropCycleDetailScreen";
-import { ActivitiesScreen } from "../screens/activities/ActivitiesScreen";
-import { WeatherScreen } from "../screens/weather/WeatherScreen";
-import { DashboardScreen } from "../screens/dashboard/DashboardScreen";
-import { AdminDashboardScreen } from "../screens/admin/AdminDashboardScreen";
-import { SuperAdminScreen } from "../screens/super-admin/SuperAdminScreen";
-import { StyleGuidePage } from "../screens/style-guide/StyleGuidePage";
+const LoginScreen = lazy(() => import("../screens/auth/LoginScreen").then((m) => ({ default: m.LoginScreen })));
+const RegisterScreen = lazy(() => import("../screens/auth/RegisterScreen").then((m) => ({ default: m.RegisterScreen })));
+const ProfileScreen = lazy(() => import("../screens/auth/ProfileScreen").then((m) => ({ default: m.ProfileScreen })));
+const VerificationScreen = lazy(() => import("../screens/verification/VerificationScreen").then((m) => ({ default: m.VerificationScreen })));
+const MyFarmsScreen = lazy(() => import("../screens/farms/MyFarmsScreen").then((m) => ({ default: m.MyFarmsScreen })));
+const FarmDetailsScreen = lazy(() => import("../screens/farms/FarmDetailsScreen").then((m) => ({ default: m.FarmDetailsScreen })));
+const PlotDetailsScreen = lazy(() => import("../screens/farms/PlotDetailsScreen").then((m) => ({ default: m.PlotDetailsScreen })));
+const CropCyclesScreen = lazy(() => import("../screens/crop-cycles/CropCyclesScreen").then((m) => ({ default: m.CropCyclesScreen })));
+const CropCycleDetailScreen = lazy(() => import("../screens/crop-cycles/CropCycleDetailScreen").then((m) => ({ default: m.CropCycleDetailScreen })));
+const ActivitiesScreen = lazy(() => import("../screens/activities/ActivitiesScreen").then((m) => ({ default: m.ActivitiesScreen })));
+const WeatherScreen = lazy(() => import("../screens/weather/WeatherScreen").then((m) => ({ default: m.WeatherScreen })));
+const DashboardScreen = lazy(() => import("../screens/dashboard/DashboardScreen").then((m) => ({ default: m.DashboardScreen })));
+const AdminDashboardScreen = lazy(() => import("../screens/admin/AdminDashboardScreen").then((m) => ({ default: m.AdminDashboardScreen })));
+const SuperAdminScreen = lazy(() => import("../screens/super-admin/SuperAdminScreen").then((m) => ({ default: m.SuperAdminScreen })));
+const StyleGuidePage = lazy(() => import("../screens/style-guide/StyleGuidePage").then((m) => ({ default: m.StyleGuidePage })));
 
 // ─── Guards ───────────────────────────────────────────────────────────────────
 
@@ -75,6 +76,26 @@ function PublicRoute() {
   return isAuthenticated ? <Navigate to="/dashboard" replace /> : <Outlet />;
 }
 
+function PlatformRoleRoute({
+  allowedRoles,
+  children,
+}: {
+  allowedRoles: Array<"admin" | "super_admin">;
+  children: React.ReactNode;
+}) {
+  const { user, isInitialized, isLoading } = useAuth();
+  if (!isInitialized || isLoading) return null;
+  return user && allowedRoles.includes(user.platform_role as "admin" | "super_admin")
+    ? <>{children}</>
+    : <Navigate to="/dashboard" replace />;
+}
+
+function FarmerRoute({ children }: { children: React.ReactNode }) {
+  const { user, isInitialized, isLoading } = useAuth();
+  if (!isInitialized || isLoading) return null;
+  return user?.user_type === "farmer" ? <>{children}</> : <Navigate to="/dashboard" replace />;
+}
+
 // ─── Placeholder ──────────────────────────────────────────────────────────────
 
 function PlaceholderPage({ title }: { title: string }) {
@@ -116,6 +137,7 @@ function PlaceholderPage({ title }: { title: string }) {
 export function AppRouter() {
   return (
     <BrowserRouter>
+      <Suspense fallback={<div role="status" aria-busy="true" style={{ minHeight: "100vh", display: "grid", placeItems: "center" }}>Loading page…</div>}>
       <Routes>
         {/* Public-only routes (redirect if already authenticated) */}
         <Route element={<PublicRoute />}>
@@ -127,20 +149,20 @@ export function AppRouter() {
         <Route element={<ProtectedRoute />}>
           <Route path="/profile" element={<ProfileScreen />} />
           <Route path="/dashboard" element={<DashboardScreen />} />
-          <Route path="/farms" element={<MyFarmsScreen />} />
-          <Route path="/farms/:farmId" element={<FarmDetailsScreen />} />
-          <Route path="/farms/:farmId/plots/:plotId" element={<PlotDetailsScreen />} />
-          <Route path="/crop-cycles" element={<CropCyclesScreen />} />
-          <Route path="/crop-cycles/:cycleId" element={<CropCycleDetailScreen />} />
-          <Route path="/activities" element={<ActivitiesScreen />} />
-          <Route path="/weather" element={<WeatherScreen />} />
-          <Route path="/verification" element={<VerificationScreen />} />
+          <Route path="/farms" element={<FarmerRoute><MyFarmsScreen /></FarmerRoute>} />
+          <Route path="/farms/:farmId" element={<FarmerRoute><FarmDetailsScreen /></FarmerRoute>} />
+          <Route path="/farms/:farmId/plots/:plotId" element={<FarmerRoute><PlotDetailsScreen /></FarmerRoute>} />
+          <Route path="/crop-cycles" element={<FarmerRoute><CropCyclesScreen /></FarmerRoute>} />
+          <Route path="/crop-cycles/:cycleId" element={<FarmerRoute><CropCycleDetailScreen /></FarmerRoute>} />
+          <Route path="/activities" element={<FarmerRoute><ActivitiesScreen /></FarmerRoute>} />
+          <Route path="/weather" element={<FarmerRoute><WeatherScreen /></FarmerRoute>} />
+          <Route path="/verification" element={<FarmerRoute><VerificationScreen /></FarmerRoute>} />
           {/* Admin routes — Prompt 18 */}
-          <Route path="/admin" element={<AdminDashboardScreen />} />
-          <Route path="/admin/*" element={<AdminDashboardScreen />} />
+          <Route path="/admin" element={<PlatformRoleRoute allowedRoles={["admin", "super_admin"]}><AdminDashboardScreen /></PlatformRoleRoute>} />
+          <Route path="/admin/*" element={<PlatformRoleRoute allowedRoles={["admin", "super_admin"]}><AdminDashboardScreen /></PlatformRoleRoute>} />
           {/* Super Admin routes — Prompt 19 */}
-          <Route path="/super-admin" element={<SuperAdminScreen />} />
-          <Route path="/super-admin/*" element={<SuperAdminScreen />} />
+          <Route path="/super-admin" element={<PlatformRoleRoute allowedRoles={["super_admin"]}><SuperAdminScreen /></PlatformRoleRoute>} />
+          <Route path="/super-admin/*" element={<PlatformRoleRoute allowedRoles={["super_admin"]}><SuperAdminScreen /></PlatformRoleRoute>} />
         </Route>
 
         {/* Dev tool — not protected */}
@@ -150,6 +172,7 @@ export function AppRouter() {
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
         <Route path="*" element={<PlaceholderPage title="404 — Page not found" />} />
       </Routes>
+      </Suspense>
     </BrowserRouter>
   );
 }

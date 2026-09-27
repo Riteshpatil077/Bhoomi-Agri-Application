@@ -38,12 +38,19 @@ def purge_expired_verification_docs() -> dict[str, Any]:
     )
 
     purged_count = 0
+    failed_count = 0
     for record in expired:
         # Delete from private object storage (§5)
+        deleted = True
         if record.selfie_photo_key and record.selfie_photo_key != "[PURGED]":
-            PrivateVerificationStorage.delete_object(record.selfie_photo_key)
+            deleted = PrivateVerificationStorage.delete_object(record.selfie_photo_key) and deleted
         if record.land_photo_key and record.land_photo_key != "[PURGED]":
-            PrivateVerificationStorage.delete_object(record.land_photo_key)
+            deleted = PrivateVerificationStorage.delete_object(record.land_photo_key) and deleted
+
+        if not deleted:
+            failed_count += 1
+            logger.error("Retention purge failed for verification record %s; leaving it retryable.", record.id)
+            continue
 
         record.selfie_photo_key = "[PURGED]"
         record.land_photo_key = "[PURGED]"
@@ -68,7 +75,8 @@ def purge_expired_verification_docs() -> dict[str, Any]:
         logger.info("Purged %d expired farmer verification document sets.", purged_count)
 
     return {
-        "status": "success",
+        "status": "partial" if failed_count else "success",
         "purged_records": purged_count,
+        "failed_records": failed_count,
         "timestamp": now.isoformat(),
     }

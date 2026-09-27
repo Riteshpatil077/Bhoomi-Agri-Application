@@ -27,13 +27,21 @@ from sqlalchemy import or_
 from app.extensions import db, limiter
 from app.models.user import User
 from app.models.auth import RefreshToken
-from app.schemas.auth import RegisterSchema, LoginSchema, StepUpSchema
+from app.schemas.auth import (
+    RegisterSchema,
+    LoginSchema,
+    StepUpSchema,
+    ProfileUpdateSchema,
+    ChangePasswordSchema,
+)
 
 auth_bp = Blueprint("auth", __name__)
 
 register_schema = RegisterSchema()
 login_schema = LoginSchema()
 step_up_schema = StepUpSchema()
+profile_update_schema = ProfileUpdateSchema()
+change_password_schema = ChangePasswordSchema()
 
 
 @auth_bp.route("/register", methods=["POST"])
@@ -303,15 +311,62 @@ def logout_all():
     return response, 200
 
 
-@auth_bp.route("/me", methods=["GET"])
+@auth_bp.route("/me", methods=["GET", "PATCH"])
 @jwt_required()
 def me():
     """
-    Return currently authenticated user profile, re-verified from the DB.
+    GET: Return currently authenticated user profile, re-verified from the DB.
+    PATCH: Update own profile (full_name, preferred_language).
     """
+    if request.method == "PATCH":
+        try:
+            data = profile_update_schema.load(request.get_json() or {})
+        except ValidationError as err:
+            return jsonify({"error": "validation_error", "messages": err.messages}), 422
+        if not data:
+            return jsonify({"error": "validation_error", "message": "At least one profile field is required."}), 422
+        if "full_name" in data:
+            current_user.full_name = data["full_name"].strip()
+        if "preferred_language" in data:
+            current_user.preferred_language = data["preferred_language"].strip()
+        db.session.commit()
+        user_dict = current_user.to_dict()
+        return jsonify({
+            "message": "Profile updated successfully.",
+            "user": user_dict,
+            **user_dict,
+        }), 200
+
+    user_dict = current_user.to_dict()
     return jsonify({
-        "user": current_user.to_dict(),
+        "user": user_dict,
+        **user_dict,
     }), 200
+
+
+@auth_bp.route("/change-password", methods=["POST"])
+@jwt_required()
+def change_password():
+    """
+    Change password for currently authenticated user.
+    """
+    if not request.is_json:
+        return jsonify({"error": "invalid_request", "message": "JSON body required"}), 400
+
+    try:
+        data = change_password_schema.load(request.get_json())
+    except ValidationError as err:
+        return jsonify({"error": "validation_error", "messages": err.messages}), 422
+    current_pw = data["current_password"]
+    new_pw = data["new_password"]
+
+    if not current_user.check_password(current_pw):
+        return jsonify({"error": "invalid_password", "message": "Current password is incorrect."}), 400
+
+    current_user.set_password(new_pw)
+    db.session.commit()
+
+    return jsonify({"message": "Password changed successfully."}), 200
 
 
 @auth_bp.route("/verify-password", methods=["POST"])

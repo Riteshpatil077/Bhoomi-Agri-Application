@@ -25,12 +25,14 @@ class AdminPermissionGrant(db.Model, UUIDPrimaryKeyMixin):
     PERMISSION_CONTENT_MODERATION = "content_moderation"
     PERMISSION_USER_REPORTS = "user_reports"
     PERMISSION_AUDIT_LOG_VIEW = "audit_log_view"
+    PERMISSION_CHAT_SUPPORT_VIEW = "chat_support_view"
 
     STANDARD_PERMISSIONS = (
         PERMISSION_VERIFICATION_REVIEW,
         PERMISSION_CONTENT_MODERATION,
         PERMISSION_USER_REPORTS,
         PERMISSION_AUDIT_LOG_VIEW,
+        PERMISSION_CHAT_SUPPORT_VIEW,
     )
 
     admin_user_id = db.Column(

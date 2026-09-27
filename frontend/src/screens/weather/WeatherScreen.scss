@@ -105,6 +105,74 @@
   }
 
   // ── Region Selector Bar ────────────────────────────────────────────────
+  &__city-search {
+    margin: 0 0 $space-md;
+    max-width: 560px;
+
+    &-label {
+      display: block;
+      margin-bottom: 6px;
+      color: $color-main-text;
+      font-size: 0.9rem;
+      font-weight: 600;
+    }
+
+    &-controls {
+      display: flex;
+      gap: $space-xs;
+
+      input {
+        flex: 1;
+        min-width: 0;
+        padding: 9px 12px;
+        border: 1px solid $color-border;
+        border-radius: $radius-md;
+        background: $color-surface;
+        color: $color-main-text;
+        font: inherit;
+      }
+
+      button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        padding: 8px 16px;
+        border: 1px solid $color-primary-dark;
+        border-radius: $radius-md;
+        background: $color-primary-green;
+        color: #FFFFFF;
+        font-weight: 600;
+        cursor: pointer;
+        white-space: nowrap;
+
+        &:disabled {
+          opacity: 0.6;
+          cursor: not-allowed;
+        }
+      }
+    }
+  }
+
+  &__farmer-location {
+    margin: 0 0 $space-lg;
+    color: $color-muted-text;
+    font-size: 0.95rem;
+  }
+
+  &__farm-location-btn {
+    margin: 0 0 $space-lg;
+    padding: 6px 12px;
+    border: 1px solid $color-border;
+    border-radius: $radius-full;
+    background: $color-surface;
+    color: $color-primary-green;
+    font: inherit;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
   &__regions-bar {
     display: flex;
     gap: $space-xs;

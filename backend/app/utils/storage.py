@@ -42,8 +42,17 @@ class PrivateVerificationStorage:
         try:
             import boto3
             from botocore.config import Config
+            session = boto3.Session()
+            credentials = session.get_credentials()
+            if credentials is None:
+                logger.info("AWS credentials are not configured for private verification storage")
+                return None
+            frozen = credentials.get_frozen_credentials()
+            if not frozen.access_key or not frozen.secret_key:
+                logger.info("AWS credentials are incomplete for private verification storage")
+                return None
             region = current_app.config.get("AWS_REGION", "ap-south-1")
-            return boto3.client(
+            return session.client(
                 "s3",
                 region_name=region,
                 config=Config(signature_version="s3v4"),
@@ -91,8 +100,9 @@ class PrivateVerificationStorage:
         bucket = cls.get_bucket_name()
         s3 = cls._get_client()
 
-        # In testing or when AWS client cannot connect, return deterministic presigned URL structure
-        if s3 is None or current_app.config.get("TESTING"):
+        # Local/test flow can use the explicit mock adapter; production must
+        # never issue a URL that only looks valid.
+        if current_app.config.get("TESTING") or (current_app.debug and s3 is None):
             upload_url = f"https://{bucket}.s3.amazonaws.com/{object_key}?upload_signature=mock_presigned_upload"
             return {
                 "upload_url": upload_url,
@@ -104,29 +114,51 @@ class PrivateVerificationStorage:
                 "expires_in": expires_in,
             }
 
+        if s3 is None:
+            raise StorageException("AWS S3 client is unavailable.")
         try:
-            url = s3.generate_presigned_url(
-                ClientMethod="put_object",
-                Params={
-                    "Bucket": bucket,
-                    "Key": object_key,
-                    "ContentType": content_type,
-                    "ServerSideEncryption": "aws:kms",
-                },
-                ExpiresIn=expires_in,
-            )
-            return {
-                "upload_url": url,
-                "object_key": object_key,
-                "fields": {
+            post = s3.generate_presigned_post(
+                Bucket=bucket,
+                Key=object_key,
+                Fields={
                     "Content-Type": content_type,
                     "x-amz-server-side-encryption": "aws:kms",
                 },
+                Conditions=[
+                    {"Content-Type": content_type},
+                    {"x-amz-server-side-encryption": "aws:kms"},
+                    ["content-length-range", 1, max_size_bytes],
+                ],
+                ExpiresIn=expires_in,
+            )
+            return {
+                "upload_url": post["url"],
+                "object_key": object_key,
+                "fields": post["fields"],
                 "expires_in": expires_in,
             }
         except Exception as exc:
             logger.error("Failed to generate presigned upload URL: %s", exc)
             raise StorageException(f"Storage error generating upload URL: {exc}") from exc
+
+    @classmethod
+    def verify_uploaded_object(cls, object_key: str) -> bool:
+        """Confirm the uploaded object exists and satisfies the verification limits."""
+        s3 = cls._get_client()
+        if current_app.config.get("TESTING") or (current_app.debug and s3 is None):
+            return True
+        if s3 is None:
+            raise StorageException("AWS S3 client is unavailable.")
+        try:
+            result = s3.head_object(Bucket=cls.get_bucket_name(), Key=object_key)
+        except Exception as exc:
+            logger.error("Unable to verify uploaded object '%s': %s", object_key, exc)
+            raise StorageException("Uploaded verification photo could not be verified.") from exc
+        if result.get("ContentLength", 0) < 1 or result.get("ContentLength", 0) > MAX_VERIFICATION_FILE_SIZE:
+            raise StorageException("Uploaded verification photo exceeds the 10MB limit.")
+        if result.get("ContentType", "").lower() not in ALLOWED_VERIFICATION_CONTENT_TYPES:
+            raise StorageException("Uploaded verification photo has an unsupported content type.")
+        return True
 
     @classmethod
     def generate_presigned_get_url(cls, object_key: str, expires_in: int | None = None) -> str:
@@ -140,8 +172,11 @@ class PrivateVerificationStorage:
         bucket = cls.get_bucket_name()
         s3 = cls._get_client()
 
-        if s3 is None or current_app.config.get("TESTING"):
+        if current_app.config.get("TESTING") or (current_app.debug and s3 is None):
             return f"https://{bucket}.s3.amazonaws.com/{object_key}?expires={expires_in}&signature=mock_presigned_get"
+
+        if s3 is None:
+            raise StorageException("AWS S3 client is unavailable.")
 
         try:
             return s3.generate_presigned_url(
@@ -164,9 +199,13 @@ class PrivateVerificationStorage:
         bucket = cls.get_bucket_name()
         s3 = cls._get_client()
 
-        if s3 is None or current_app.config.get("TESTING"):
+        if current_app.config.get("TESTING") or (current_app.debug and s3 is None):
             logger.info("Mock purged object '%s' from bucket '%s'", object_key, bucket)
             return True
+
+        if s3 is None:
+            logger.error("Cannot purge object '%s': AWS S3 client is unavailable.", object_key)
+            return False
 
         try:
             s3.delete_object(Bucket=bucket, Key=object_key)
@@ -188,8 +227,17 @@ class PublicMediaStorage:
         try:
             import boto3
             from botocore.config import Config
+            session = boto3.Session()
+            credentials = session.get_credentials()
+            if credentials is None:
+                logger.info("AWS credentials are not configured for public media storage")
+                return None
+            frozen = credentials.get_frozen_credentials()
+            if not frozen.access_key or not frozen.secret_key:
+                logger.info("AWS credentials are incomplete for public media storage")
+                return None
             region = current_app.config.get("AWS_REGION", "ap-south-1")
-            return boto3.client(
+            return session.client(
                 "s3",
                 region_name=region,
                 config=Config(signature_version="s3v4"),

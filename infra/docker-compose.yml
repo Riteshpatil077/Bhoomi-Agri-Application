@@ -3,8 +3,6 @@
 #           postgres, redis.
 # For production, use a managed container service + managed DB (§10/§11).
 
-version: "3.9"
-
 services:
   # ── PostgreSQL ────────────────────────────────────────────────────────────
   postgres:
@@ -44,7 +42,7 @@ services:
   # ── Flask Web App ─────────────────────────────────────────────────────────
   web:
     build:
-      context: ./backend
+      context: ../backend
       dockerfile: Dockerfile
     container_name: bhoomi_web
     restart: unless-stopped
@@ -54,7 +52,7 @@ services:
       REDIS_URL: redis://redis:6379/0
       CELERY_BROKER_URL: redis://redis:6379/0
       CELERY_RESULT_BACKEND: redis://redis:6379/0
-      RATELIMIT_STORAGE_URL: redis://redis:6379/0
+      RATELIMIT_STORAGE_URI: redis://redis:6379/0
       # Override secrets via .env file or secrets manager in production — NEVER hardcode
       SECRET_KEY: dev-secret-key-replace-in-prod
       JWT_SECRET_KEY: dev-jwt-secret-replace-in-prod
@@ -67,14 +65,14 @@ services:
       redis:
         condition: service_healthy
     volumes:
-      - ./backend:/app  # Mount for hot-reload in development
+      - ../backend:/app  # Mount for hot-reload in development
     command: >
       sh -c "flask db upgrade && gunicorn --bind 0.0.0.0:8000 --workers 2 --reload wsgi:application"
 
   # ── Celery Worker ─────────────────────────────────────────────────────────
   worker:
     build:
-      context: ./backend
+      context: ../backend
       dockerfile: Dockerfile
     container_name: bhoomi_worker
     restart: unless-stopped
@@ -92,14 +90,14 @@ services:
       redis:
         condition: service_healthy
     volumes:
-      - ./backend:/app
+      - ../backend:/app
     command: >
       celery -A wsgi:celery_app worker --loglevel=info --concurrency=2
 
   # ── Celery Beat (scheduler) ───────────────────────────────────────────────
   beat:
     build:
-      context: ./backend
+      context: ../backend
       dockerfile: Dockerfile
     container_name: bhoomi_beat
     restart: unless-stopped
@@ -114,7 +112,7 @@ services:
     depends_on:
       - redis
     volumes:
-      - ./backend:/app
+      - ../backend:/app
     command: >
       celery -A wsgi:celery_app beat --loglevel=info --scheduler celery.beat:PersistentScheduler
 

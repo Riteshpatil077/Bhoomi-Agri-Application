@@ -110,6 +110,17 @@
     color: $color-muted-text;
   }
 
+  &__estimate-badge {
+    align-self: flex-start;
+    color: #7A4B00;
+    background: #FFF4D6;
+    border: 1px solid #E8C979;
+    border-radius: $radius-md;
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 3px 8px;
+  }
+
   &__cycles-indicator {
     display: flex;
     align-items: center;

@@ -13,12 +13,14 @@ import {
   ShieldAlert,
 } from "lucide-react";
 import { StatusBadge } from "../StatusBadge/StatusBadge";
+import { useLanguage } from "../../../i18n/LanguageContext";
 import "./Sidebar.scss";
 
 export interface UserSummary {
   name: string;
   phone?: string;
-  role: "farmer" | "admin" | "super_admin";
+  role: "user" | "farmer" | "buyer" | "expert" | "provider" | "admin" | "super_admin";
+  userType?: "farmer" | "buyer" | "expert" | "provider" | null;
   verificationStatus?: "verified" | "pending" | "rejected" | "unverified";
 }
 
@@ -34,6 +36,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   className = "",
 }) => {
   const navigate = useNavigate();
+  const { t } = useLanguage();
 
   const handleLogout = () => {
     if (onLogout) {
@@ -45,13 +48,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
   };
 
   return (
-    <aside className={`sidebar ${className}`} aria-label="Main Navigation">
+    <aside className={`sidebar ${className}`} aria-label={t("Main Navigation")}>
       {/* Brand Header */}
       <div className="sidebar__brand">
         <div className="sidebar__logo-mark">🌱</div>
         <div className="sidebar__brand-text">
           <span className="sidebar__title">Bhoomi</span>
-          <span className="sidebar__tagline">Agri Platform</span>
+          <span className="sidebar__tagline">{t("Agri Platform")}</span>
         </div>
       </div>
 
@@ -64,12 +67,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <div className="sidebar__user-details">
             <span className="sidebar__user-name">{user.name}</span>
             <div className="sidebar__user-badges">
-              <span className="sidebar__role-tag">{user.role}</span>
+              <span className="sidebar__role-tag">
+                {user.role === "admin" || user.role === "super_admin"
+                  ? user.role
+                  : user.userType || user.role}
+              </span>
               {user.verificationStatus === "verified" && (
-                <StatusBadge variant="verified" size="sm" label="Verified" />
+                <StatusBadge variant="verified" size="sm" label={t("Verified")} />
               )}
               {user.verificationStatus === "pending" && (
-                <StatusBadge variant="pending" size="sm" label="Pending" />
+                <StatusBadge variant="pending" size="sm" label={t("Pending")} />
               )}
             </div>
           </div>
@@ -78,7 +85,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
       {/* Navigation Sections */}
       <nav className="sidebar__nav">
-        <div className="sidebar__section-title">Farm Management</div>
+        {(user?.userType === "farmer" || user?.role === "farmer") && (
+          <>
+        <div className="sidebar__section-title">{t("Farm Management")}</div>
         <ul className="sidebar__menu">
           <li>
             <NavLink
@@ -88,7 +97,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               }
             >
               <LayoutDashboard size={18} className="sidebar__icon" />
-              <span>Dashboard</span>
+              <span>{t("Dashboard")}</span>
             </NavLink>
           </li>
           <li>
@@ -99,7 +108,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               }
             >
               <MapPin size={18} className="sidebar__icon" />
-              <span>My Farms</span>
+              <span>{t("My Farms")}</span>
             </NavLink>
           </li>
           <li>
@@ -110,7 +119,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               }
             >
               <Sprout size={18} className="sidebar__icon" />
-              <span>Crop Cycles</span>
+              <span>{t("Crop Cycles")}</span>
             </NavLink>
           </li>
           <li>
@@ -121,7 +130,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               }
             >
               <CalendarCheck2 size={18} className="sidebar__icon" />
-              <span>Activities</span>
+              <span>{t("Activities")}</span>
             </NavLink>
           </li>
           <li>
@@ -132,7 +141,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               }
             >
               <CloudSun size={18} className="sidebar__icon" />
-              <span>Weather & Advisory</span>
+              <span>{t("Weather & Advisory")}</span>
             </NavLink>
           </li>
           <li>
@@ -143,15 +152,17 @@ export const Sidebar: React.FC<SidebarProps> = ({
               }
             >
               <ShieldCheck size={18} className="sidebar__icon" />
-              <span>Farmer Verification</span>
+              <span>{t("Farmer Verification")}</span>
             </NavLink>
           </li>
         </ul>
+          </>
+        )}
 
         {/* Administration Links (if admin/super_admin or for navigation) */}
         {(user?.role === "admin" || user?.role === "super_admin") && (
           <>
-            <div className="sidebar__section-title">Administration</div>
+            <div className="sidebar__section-title">{t("Administration")}</div>
             <ul className="sidebar__menu">
               <li>
                 <NavLink
@@ -161,7 +172,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   }
                 >
                   <ShieldAlert size={18} className="sidebar__icon" />
-                  <span>Admin Portal</span>
+                  <span>{t("Admin Portal")}</span>
                 </NavLink>
               </li>
               {user?.role === "super_admin" && (
@@ -173,7 +184,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     }
                   >
                     <ShieldAlert size={18} className="sidebar__icon" />
-                    <span>Super Admin</span>
+                    <span>{t("Super Admin")}</span>
                   </NavLink>
                 </li>
               )}
@@ -181,7 +192,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </>
         )}
 
-        <div className="sidebar__section-title">System & Tools</div>
+        <div className="sidebar__section-title">{t("System & Tools")}</div>
         <ul className="sidebar__menu">
           <li>
             <NavLink
@@ -191,7 +202,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               }
             >
               <User size={18} className="sidebar__icon" />
-              <span>My Profile</span>
+              <span>{t("My Profile")}</span>
             </NavLink>
           </li>
           <li>
@@ -202,7 +213,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               }
             >
               <Palette size={18} className="sidebar__icon" />
-              <span>Design System Guide</span>
+              <span>{t("Design System Guide")}</span>
             </NavLink>
           </li>
         </ul>
@@ -216,7 +227,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           onClick={handleLogout}
         >
           <LogOut size={16} />
-          <span>Sign Out</span>
+          <span>{t("Sign Out")}</span>
         </button>
       </div>
     </aside>

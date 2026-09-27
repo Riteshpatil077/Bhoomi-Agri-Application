@@ -69,6 +69,10 @@ jobs:
           pip install bandit
           bandit -r app/ -ll --skip B101
 
+      - name: Security — reject raw SQL strings
+        working-directory: backend
+        run: python scripts/check_no_raw_sql.py
+
       - name: Security — pip-audit
         working-directory: backend
         run: |

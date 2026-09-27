@@ -14,6 +14,7 @@ from marshmallow import ValidationError
 from app.extensions import db
 from app.models.farm import Farm, Plot, CropCycle, CropCatalog, FarmActivity
 from app.schemas.activity import CreateActivitySchema, UpdateActivitySchema, CompleteActivitySchema
+from app.rbac import user_type_required
 
 from . import farm_activities_bp
 
@@ -61,6 +62,7 @@ def _verify_activity_owner(activity_id: uuid.UUID) -> tuple[FarmActivity | None,
 
 @farm_activities_bp.route("", methods=["GET"])
 @jwt_required()
+@user_type_required("farmer")
 def list_my_activities():
     """
     GET /api/activities
@@ -111,6 +113,7 @@ def list_my_activities():
 
 @farm_activities_bp.route("/cycle/<uuid:cycle_id>", methods=["GET"])
 @jwt_required()
+@user_type_required("farmer")
 def list_activities_for_cycle(cycle_id: uuid.UUID):
     """
     GET /api/activities/cycle/<cycle_id>
@@ -131,6 +134,7 @@ def list_activities_for_cycle(cycle_id: uuid.UUID):
 
 @farm_activities_bp.route("/cycle/<uuid:cycle_id>", methods=["POST"])
 @jwt_required()
+@user_type_required("farmer")
 def create_activity(cycle_id: uuid.UUID):
     """
     POST /api/activities/cycle/<cycle_id>
@@ -165,6 +169,7 @@ def create_activity(cycle_id: uuid.UUID):
 
 @farm_activities_bp.route("/<uuid:activity_id>", methods=["GET"])
 @jwt_required()
+@user_type_required("farmer")
 def get_activity(activity_id: uuid.UUID):
     """
     GET /api/activities/<id>
@@ -187,6 +192,7 @@ def get_activity(activity_id: uuid.UUID):
 
 @farm_activities_bp.route("/<uuid:activity_id>", methods=["PUT", "PATCH"])
 @jwt_required()
+@user_type_required("farmer")
 def update_activity(activity_id: uuid.UUID):
     """
     PATCH /api/activities/<id>
@@ -222,6 +228,7 @@ def update_activity(activity_id: uuid.UUID):
 
 @farm_activities_bp.route("/<uuid:activity_id>/complete", methods=["POST", "PATCH"])
 @jwt_required()
+@user_type_required("farmer")
 def complete_activity(activity_id: uuid.UUID):
     """
     POST /api/activities/<id>/complete
@@ -252,6 +259,7 @@ def complete_activity(activity_id: uuid.UUID):
 
 @farm_activities_bp.route("/<uuid:activity_id>", methods=["DELETE"])
 @jwt_required()
+@user_type_required("farmer")
 def delete_activity(activity_id: uuid.UUID):
     """
     DELETE /api/activities/<id>

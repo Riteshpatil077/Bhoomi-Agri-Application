@@ -41,7 +41,9 @@ export interface ActivityEntry {
   crop_cycle_id: string;
   activity_type: string;
   notes: string | null;
-  activity_date: string;
+  scheduled_date: string | null;
+  completed_date: string | null;
+  is_completed: boolean;
   created_at: string;
 }
 
@@ -49,7 +51,6 @@ export interface CreateCropCyclePayload {
   crop_catalog_id: string;
   sowing_date: string; // "YYYY-MM-DD"
   expected_harvest_date?: string | null;
-  status?: "active" | "harvested" | "failed";
 }
 
 export interface UpdateCropCyclePayload {

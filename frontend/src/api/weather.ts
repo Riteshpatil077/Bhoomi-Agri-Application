@@ -19,6 +19,7 @@ export interface WeatherPayload {
   condition?: string;
   humidity_percent?: number;
   precipitation_probability_percent?: number;
+  cloud_cover_percent?: number;
   wind_speed_kmh?: number;
   uv_index?: number;
   advisory?: string;
@@ -46,11 +47,18 @@ export interface ForecastRecord {
 }
 
 export interface ForecastResponse {
-  status: "current" | "stale" | "unavailable";
+  status: "current" | "stale" | "unavailable" | "not_found";
   is_stale: boolean;
   message: string;
   forecast: ForecastRecord | null;
   provenance: WeatherProvenance | null;
+  location?: {
+    name: string;
+    state?: string | null;
+    country?: string | null;
+    latitude: number;
+    longitude: number;
+  };
 }
 
 export interface AdvisoryRecord {
@@ -71,6 +79,14 @@ export interface AdvisoriesResponse {
   total: number;
 }
 
+export interface CitySuggestion {
+  name: string;
+  state?: string | null;
+  country?: string | null;
+  latitude: number;
+  longitude: number;
+}
+
 // ─── API Endpoints ─────────────────────────────────────────────────────────────
 
 /**
@@ -80,11 +96,13 @@ export async function fetchForecast(params?: {
   region?: string;
   latitude?: number;
   longitude?: number;
+  city?: string;
 }) {
   const qp = new URLSearchParams();
   if (params?.region) qp.set("region", params.region);
   if (params?.latitude !== undefined) qp.set("latitude", String(params.latitude));
   if (params?.longitude !== undefined) qp.set("longitude", String(params.longitude));
+  if (params?.city) qp.set("city", params.city);
   const query = qp.toString() ? `?${qp.toString()}` : "";
   return api.get<ForecastResponse>(`/weather/forecast${query}`);
 }
@@ -97,4 +115,10 @@ export async function fetchAdvisories(params?: { region?: string }) {
   if (params?.region) qp.set("region", params.region);
   const query = qp.toString() ? `?${qp.toString()}` : "";
   return api.get<AdvisoriesResponse>(`/weather/advisories${query}`);
+}
+
+/** Fetch provider-backed city suggestions without exposing the provider key. */
+export async function searchWeatherCities(query: string) {
+  const qp = new URLSearchParams({ q: query });
+  return api.get<{ suggestions: CitySuggestion[] }>(`/weather/cities?${qp.toString()}`);
 }

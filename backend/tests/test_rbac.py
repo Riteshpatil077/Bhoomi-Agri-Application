@@ -128,7 +128,8 @@ class TestPlatformRoleRequired:
                 headers={"X-CSRF-TOKEN": csrf},
             )
         assert resp.status_code == 200
-        assert resp.get_json()["implicit_super_admin"] is True
+        assert resp.get_json()["implicit_super_admin"] is False
+        assert resp.get_json()["permissions"] == []
 
     def test_unauthenticated_gets_401(self, app):
         """No JWT → 401."""
@@ -235,17 +236,24 @@ class TestPermissionRequired:
             )
         assert resp.status_code == 403
 
-    def test_super_admin_bypasses_grant_check(self, app, db_session):
-        """Super Admin gets 200 on permission-gated endpoint with NO grants."""
+    def test_super_admin_requires_explicit_grant(self, app, db_session):
+        """Super Admin has no implicit access to permission-gated endpoints."""
+        from app.extensions import db
+        from app.models.admin import AdminPermissionGrant
         phone = "9800010014"
-        _make_admin(app, phone, platform_role="super_admin")
+        admin = _make_admin(app, phone, platform_role="super_admin")
         with _fresh_client(app) as c:
             _, csrf = _login(c, phone)
-            resp = c.get(
+            denied = c.get(
                 "/api/admin/users",
                 headers={"X-CSRF-TOKEN": csrf},
             )
-        assert resp.status_code == 200
+            assert denied.status_code == 403
+            with app.app_context():
+                db.session.add(AdminPermissionGrant(admin_user_id=admin.id, permission_key="user_reports", granted_by=admin.id))
+                db.session.commit()
+            allowed = c.get("/api/admin/users", headers={"X-CSRF-TOKEN": csrf})
+        assert allowed.status_code == 200
 
 
 # --------------------------------------------------------------------------- #
@@ -267,6 +275,7 @@ class TestSuperAdminAccountManagement:
                     "phone_number": "8800000011",
                     "email": "newadmin1@bhoomi.test",
                     "password": "AdminPass1",
+                    "step_up_password": "Admin@1234",
                     "platform_role": "admin",
                 },
                 headers={"X-CSRF-TOKEN": csrf},
@@ -277,6 +286,32 @@ class TestSuperAdminAccountManagement:
         assert data["user"]["platform_role"] == "admin"
         assert data["user"]["phone_number"] == "8800000011"
 
+    def test_create_admin_requires_valid_step_up_password(self, app, db_session):
+        _make_admin(app, "9900001099", password="Admin@1234", platform_role="super_admin")
+        with _fresh_client(app) as c:
+            _, csrf = _login(c, "9900001099", password="Admin@1234")
+            payload = {
+                "full_name": "New Super Admin",
+                "phone_number": "8800000099",
+                "password": "TargetPass1",
+                "platform_role": "super_admin",
+            }
+            missing = c.post("/api/super-admin/admins", json=payload, headers={"X-CSRF-TOKEN": csrf})
+            invalid = c.post(
+                "/api/super-admin/admins",
+                json={**payload, "step_up_password": "wrong"},
+                headers={"X-CSRF-TOKEN": csrf},
+            )
+            valid = c.post(
+                "/api/super-admin/admins",
+                json={**payload, "step_up_password": "Admin@1234"},
+                headers={"X-CSRF-TOKEN": csrf},
+            )
+        assert missing.status_code == 401
+        assert invalid.status_code == 401
+        assert valid.status_code == 201
+        assert valid.get_json()["user"]["platform_role"] == "super_admin"
+
     def test_create_admin_duplicate_phone_rejected(self, app, db_session):
         """Duplicate phone yields 409."""
         _make_admin(app, "9900001012", platform_role="super_admin")
@@ -286,13 +321,13 @@ class TestSuperAdminAccountManagement:
             phone = "8800000012"
             c.post(
                 "/api/super-admin/admins",
-                json={"full_name": "A1", "phone_number": phone, "password": "AdminPass1",
+                json={"full_name": "A1", "phone_number": phone, "password": "AdminPass1", "step_up_password": "Admin@1234",
                       "platform_role": "admin"},
                 headers=headers,
             )
             resp = c.post(
                 "/api/super-admin/admins",
-                json={"full_name": "A2", "phone_number": phone, "password": "AdminPass1",
+                json={"full_name": "A2", "phone_number": phone, "password": "AdminPass1", "step_up_password": "Admin@1234",
                       "platform_role": "admin"},
                 headers=headers,
             )
@@ -306,7 +341,7 @@ class TestSuperAdminAccountManagement:
             resp = c.post(
                 "/api/super-admin/admins",
                 json={"full_name": "Bad", "phone_number": "8800000013",
-                      "password": "AdminPass1", "platform_role": "user"},
+                      "password": "AdminPass1", "step_up_password": "Admin@1234", "platform_role": "user"},
                 headers={"X-CSRF-TOKEN": csrf},
                 content_type="application/json",
             )
@@ -511,11 +546,18 @@ class TestPrivilegeEscalation:
 class TestAuditLog:
     """Tests for /api/super-admin/audit-logs."""
 
-    def test_super_admin_can_view_audit_logs(self, app, db_session):
-        """Super Admin gets 200 from audit logs endpoint."""
-        _make_admin(app, "9900003011", platform_role="super_admin")
+    def test_super_admin_needs_explicit_audit_grant(self, app, db_session):
+        """Super Admin audit log access requires an explicit grant."""
+        from app.extensions import db
+        from app.models.admin import AdminPermissionGrant
+        admin = _make_admin(app, "9900003011", platform_role="super_admin")
         with _fresh_client(app) as c:
             _, csrf = _login(c, "9900003011")
+            denied = c.get("/api/super-admin/audit-logs", headers={"X-CSRF-TOKEN": csrf})
+            assert denied.status_code == 403
+            with app.app_context():
+                db.session.add(AdminPermissionGrant(admin_user_id=admin.id, permission_key="audit_log_view", granted_by=admin.id))
+                db.session.commit()
             resp = c.get(
                 "/api/super-admin/audit-logs",
                 headers={"X-CSRF-TOKEN": csrf},
@@ -524,6 +566,38 @@ class TestAuditLog:
         data = resp.get_json()
         assert "audit_logs" in data
         assert "total" in data
+
+    def test_admin_audit_logs_require_explicit_grant(self, app, db_session):
+        from app.extensions import db
+        from app.models.admin import AdminPermissionGrant
+        admin = _make_admin(app, "9900003014", platform_role="admin")
+        with _fresh_client(app) as c:
+            _, csrf = _login(c, "9900003014")
+            assert c.get("/api/admin/audit-logs", headers={"X-CSRF-TOKEN": csrf}).status_code == 403
+            with app.app_context():
+                db.session.add(AdminPermissionGrant(admin_user_id=admin.id, permission_key="audit_log_view", granted_by=admin.id))
+                db.session.commit()
+            allowed = c.get("/api/admin/audit-logs", headers={"X-CSRF-TOKEN": csrf})
+        assert allowed.status_code == 200
+
+    def test_platform_settings_are_persisted_and_super_admin_only(self, app, db_session):
+        _make_admin(app, "9900003015", platform_role="super_admin")
+        _make_admin(app, "9900003016", platform_role="admin")
+        with _fresh_client(app) as c:
+            _, csrf = _login(c, "9900003015")
+            saved = c.put(
+                "/api/super-admin/settings/platform.support_email",
+                json={"value": "help@example.test"},
+                headers={"X-CSRF-TOKEN": csrf},
+            )
+            listed = c.get("/api/super-admin/settings", headers={"X-CSRF-TOKEN": csrf})
+        assert saved.status_code == 200
+        assert saved.get_json()["setting"]["value"] == "help@example.test"
+        assert any(item["key"] == "platform.support_email" for item in listed.get_json()["settings"])
+        with _fresh_client(app) as c:
+            _, csrf = _login(c, "9900003016")
+            denied = c.get("/api/super-admin/settings", headers={"X-CSRF-TOKEN": csrf})
+        assert denied.status_code == 403
 
     def test_regular_user_cannot_view_audit_logs(self, app, db_session):
         """Regular user gets 403 on audit logs."""

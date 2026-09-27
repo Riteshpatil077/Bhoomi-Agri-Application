@@ -17,11 +17,12 @@
 import { useState, useEffect, useId } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  User, Mail, Phone, Globe, Shield, LogOut, WifiOff,
+  ArrowLeft, User, Mail, Phone, Globe, Shield, LogOut, WifiOff,
   AlertCircle, CheckCircle2, Eye, EyeOff, RefreshCw
 } from "lucide-react";
 
 import { useAuth } from "../../context/AuthContext";
+import { useLanguage } from "../../i18n/LanguageContext";
 import { FormField } from "../../design-system";
 import { useToast } from "../../design-system";
 import { ConfirmDialog } from "../../design-system";
@@ -67,8 +68,14 @@ function validatePw(f: PwForm): PwErrors {
 
 export function ProfileScreen() {
   const { user, isLoading, isAuthenticated, isInitialized, updateProfile, changePassword, logout, logoutAll } = useAuth();
+  const { setLanguage, t } = useLanguage();
   const { toast } = useToast();
   const navigate = useNavigate();
+  const handleBack = () => {
+    const historyIndex = window.history.state?.idx;
+    if (typeof historyIndex === "number" && historyIndex > 0) navigate(-1);
+    else navigate("/dashboard");
+  };
 
   // ── Local state ─────────────────────────────────────────────────────────────
   const [fetchError, setFetchError] = useState<string | null>(null);
@@ -118,7 +125,10 @@ export function ProfileScreen() {
 
   if (!isInitialized || (isLoading && !user)) {
     return (
-      <main className="profile-page" aria-label="Your profile — loading">
+      <main className="profile-page" aria-label={t("Your profile — loading")}>
+        <button type="button" className="profile-back-button" onClick={handleBack}>
+          <ArrowLeft size={18} aria-hidden="true" /> Back
+        </button>
         <div className="profile-card">
           <div className="profile-header" style={{ minHeight: 120 }}>
             <div className="profile-header__avatar" style={{ opacity: 0.4 }}>?</div>
@@ -146,6 +156,9 @@ export function ProfileScreen() {
   if (fetchError) {
     return (
       <main className="profile-page" aria-label="Profile — error">
+        <button type="button" className="profile-back-button" onClick={handleBack}>
+          <ArrowLeft size={18} aria-hidden="true" /> Back
+        </button>
         <div className="profile-card">
           <div className="auth-body">
             <div className="auth-alert auth-alert--error" role="alert">
@@ -253,7 +266,10 @@ export function ProfileScreen() {
   // ── State 3 — Success (profile loaded) ──────────────────────────────────────
 
   return (
-    <main className="profile-page" aria-label="Your profile">
+    <main className="profile-page" aria-label={t("Your profile")}>
+      <button type="button" className="profile-back-button" onClick={handleBack}>
+        <ArrowLeft size={18} aria-hidden="true" /> Back
+      </button>
       <div className="profile-card">
 
         {/* Profile header */}
@@ -276,15 +292,15 @@ export function ProfileScreen() {
 
           {/* ── Account Info ─────────────────────────────────────────────────── */}
           <section className="profile-section" aria-labelledby="account-info-heading">
-            <h2 className="profile-section__title" id="account-info-heading">Account info</h2>
+            <h2 className="profile-section__title" id="account-info-heading">{t("Account info")}</h2>
 
             <div>
               {[
-                { label: "Phone", icon: <Phone size={14} aria-hidden="true" />, value: user.phone_number },
-                { label: "Email", icon: <Mail size={14} aria-hidden="true" />, value: user.email },
-                { label: "Role", icon: <User size={14} aria-hidden="true" />, value: user.user_type ? USER_TYPE_LABELS[user.user_type] ?? user.user_type : "—" },
-                { label: "Language", icon: <Globe size={14} aria-hidden="true" />, value: LANGUAGES[user.preferred_language] ?? user.preferred_language },
-                { label: "Verification", icon: <Shield size={14} aria-hidden="true" />, value: (
+                { label: t("Phone"), icon: <Phone size={14} aria-hidden="true" />, value: user.phone_number },
+                { label: t("Email"), icon: <Mail size={14} aria-hidden="true" />, value: user.email },
+                { label: t("Role"), icon: <User size={14} aria-hidden="true" />, value: user.user_type ? t(USER_TYPE_LABELS[user.user_type] ?? user.user_type) : "—" },
+                { label: t("Language"), icon: <Globe size={14} aria-hidden="true" />, value: LANGUAGES[user.preferred_language] ?? user.preferred_language },
+                { label: t("Verification"), icon: <Shield size={14} aria-hidden="true" />, value: (
                   <StatusBadge
                     variant={
                       user.verification_status === "verified" ? "verified" :
@@ -311,7 +327,7 @@ export function ProfileScreen() {
 
           {/* ── Edit Profile ──────────────────────────────────────────────────── */}
           <section className="profile-section" aria-labelledby="edit-profile-heading">
-            <h2 className="profile-section__title" id="edit-profile-heading">Edit profile</h2>
+            <h2 className="profile-section__title" id="edit-profile-heading">{t("Edit profile")}</h2>
 
             {!editMode ? (
               <button
@@ -320,7 +336,7 @@ export function ProfileScreen() {
                 className="btn btn-outline btn-sm"
                 onClick={() => { setEditMode(true); setEditError(null); }}
               >
-                Edit name & language
+                {t("Edit name & language")}
               </button>
             ) : (
               <div className="profile-section__form">
@@ -333,7 +349,7 @@ export function ProfileScreen() {
                 )}
 
                 {/* State 4 — Validation: name required */}
-                <FormField label="Full name" id={nameId} required error={!editName.trim() && isSaving ? "Full name is required." : undefined}>
+                <FormField label={t("Full name")} id={nameId} required error={!editName.trim() && isSaving ? t("Full name is required.") : undefined}>
                   <input
                     id={nameId}
                     type="text"
@@ -345,13 +361,13 @@ export function ProfileScreen() {
                   />
                 </FormField>
 
-                <FormField label="Preferred language" id={langId}>
+                <FormField label={t("Preferred language")} id={langId}>
                   <select
                     id={langId}
                     className="select-field"
                     value={editLang}
                     disabled={isSaving}
-                    onChange={(e) => setEditLang(e.target.value)}
+                    onChange={(e) => { setEditLang(e.target.value); setLanguage(e.target.value); }}
                   >
                     {LANG_OPTIONS.map((l) => (
                       <option key={l.value} value={l.value}>{l.label}</option>
@@ -368,7 +384,7 @@ export function ProfileScreen() {
                     aria-busy={isSaving}
                     onClick={handleSaveProfile}
                   >
-                    {isSaving ? <><span className="auth-spinner" aria-hidden="true" /> Saving…</> : "Save changes"}
+                    {isSaving ? <><span className="auth-spinner" aria-hidden="true" /> {t("Saving…")}</> : t("Save changes")}
                   </button>
                   <button
                     type="button"
@@ -376,7 +392,7 @@ export function ProfileScreen() {
                     disabled={isSaving}
                     onClick={() => { setEditMode(false); setEditError(null); setEditName(user.full_name); setEditLang(user.preferred_language || "en"); }}
                   >
-                    Cancel
+                    {t("Cancel")}
                   </button>
                 </div>
               </div>
@@ -385,7 +401,7 @@ export function ProfileScreen() {
 
           {/* ── Change Password ───────────────────────────────────────────────── */}
           <section className="profile-section" aria-labelledby="change-pw-heading">
-            <h2 className="profile-section__title" id="change-pw-heading">Password</h2>
+            <h2 className="profile-section__title" id="change-pw-heading">{t("Password")}</h2>
 
             {!showPwSection ? (
               <button
@@ -394,7 +410,7 @@ export function ProfileScreen() {
                 className="btn btn-outline btn-sm"
                 onClick={() => setShowPwSection(true)}
               >
-                Change password
+                {t("Change password")}
               </button>
             ) : (
               <div className="profile-section__form">
@@ -452,7 +468,7 @@ export function ProfileScreen() {
                     aria-busy={isSavingPw}
                     onClick={handleSavePassword}
                   >
-                    {isSavingPw ? <><span className="auth-spinner" aria-hidden="true" /> Saving…</> : "Update password"}
+                    {isSavingPw ? <><span className="auth-spinner" aria-hidden="true" /> {t("Saving…")}</> : t("Update password")}
                   </button>
                   <button
                     type="button"
@@ -460,7 +476,7 @@ export function ProfileScreen() {
                     disabled={isSavingPw}
                     onClick={() => { setShowPwSection(false); setPwApiError(null); setPwForm({ current: "", next: "", confirm: "" }); setPwTouched({}); }}
                   >
-                    Cancel
+                    {t("Cancel")}
                   </button>
                 </div>
               </div>
@@ -469,7 +485,7 @@ export function ProfileScreen() {
 
           {/* ── Sessions ──────────────────────────────────────────────────────── */}
           <section className="profile-section" aria-labelledby="sessions-heading">
-            <h2 className="profile-section__title" id="sessions-heading">Sessions</h2>
+            <h2 className="profile-section__title" id="sessions-heading">{t("Sessions")}</h2>
             <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap" }}>
               <button
                 type="button"
@@ -479,7 +495,7 @@ export function ProfileScreen() {
                 onClick={() => setShowLogoutConfirm(true)}
                 style={{ display: "flex", alignItems: "center", gap: "6px" }}
               >
-                <LogOut size={15} aria-hidden="true" /> Sign out
+                <LogOut size={15} aria-hidden="true" /> {t("Sign Out")}
               </button>
               <button
                 type="button"
@@ -489,7 +505,7 @@ export function ProfileScreen() {
                 onClick={() => setShowLogoutAllConfirm(true)}
                 style={{ display: "flex", alignItems: "center", gap: "6px" }}
               >
-                <RefreshCw size={15} aria-hidden="true" /> Sign out all devices
+                <RefreshCw size={15} aria-hidden="true" /> {t("Sign out all devices")}
               </button>
             </div>
           </section>

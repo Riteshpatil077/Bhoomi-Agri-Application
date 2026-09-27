@@ -15,9 +15,9 @@ migrate = Migrate()
 jwt = JWTManager()
 cors = CORS()
 
-# Limiter is wired to Redis storage via RATELIMIT_STORAGE_URL in config.
+# Flask-Limiter reads RATELIMIT_STORAGE_URI from Flask config at init time.
 limiter = Limiter(
     key_func=get_remote_address,
     default_limits=["200 per minute"],
-    storage_uri=None,  # overridden by RATELIMIT_STORAGE_URL in config
+    storage_uri=None,  # overridden by RATELIMIT_STORAGE_URI in app config
 )

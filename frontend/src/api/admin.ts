@@ -86,6 +86,25 @@ export interface PhotoUrlResponse {
   photo_type: "selfie" | "land";
 }
 
+export interface AdminAuditLogEntry {
+  id: string;
+  actor_user_id: string;
+  action: string;
+  resource_type: string | null;
+  resource_id: string | null;
+  reason: string | null;
+  metadata_redacted: Record<string, unknown> | null;
+  created_at: string;
+}
+
+export interface AdminAuditLogsResponse {
+  audit_logs: AdminAuditLogEntry[];
+  total: number;
+  page: number;
+  pages: number;
+  per_page: number;
+}
+
 // ─── API Endpoints ─────────────────────────────────────────────────────────────
 
 /**
@@ -165,6 +184,15 @@ export async function fetchPhotoPresignedUrl(
     { photo_type: photoType, reason },
     csrfHeaders()
   );
+}
+
+/** List redacted audit events (requires the explicit audit_log_view grant). */
+export async function fetchAdminAuditLogs(params?: { page?: number; per_page?: number }) {
+  const qp = new URLSearchParams();
+  if (params?.page) qp.set("page", String(params.page));
+  if (params?.per_page) qp.set("per_page", String(params.per_page));
+  const query = qp.toString() ? `?${qp.toString()}` : "";
+  return api.get<AdminAuditLogsResponse>(`/admin/audit-logs${query}`);
 }
 
 /**

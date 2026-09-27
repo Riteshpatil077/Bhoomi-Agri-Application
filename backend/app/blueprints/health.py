@@ -3,9 +3,7 @@ Bhoomi — Health-check blueprint
 Provides /healthz (liveness) and /readyz (readiness) endpoints.
 These are NOT under /api because load balancers probe them directly.
 """
-from flask import Blueprint, jsonify
-from sqlalchemy import text
-
+from flask import Blueprint, current_app, jsonify
 from ..extensions import db
 
 health_bp = Blueprint("health", __name__)
@@ -29,10 +27,12 @@ def readiness():
     healthy = True
 
     try:
-        db.session.execute(text("SELECT 1"))
+        db.session.scalar(db.select(1))
         checks["database"] = "ok"
-    except Exception as exc:
-        checks["database"] = f"error: {exc}"
+    except Exception:
+        # Keep connection details out of this unauthenticated public endpoint.
+        current_app.logger.exception("Database readiness check failed")
+        checks["database"] = "unavailable"
         healthy = False
 
     return jsonify({"status": "ok" if healthy else "degraded", "checks": checks}), (

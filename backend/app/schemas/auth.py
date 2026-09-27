@@ -82,3 +82,25 @@ class StepUpSchema(Schema):
         load_only=True,
         error_messages={"required": "Password confirmation is required."},
     )
+
+
+class ProfileUpdateSchema(Schema):
+    """Allow only supported, bounded fields on the caller's own profile."""
+    class Meta:
+        unknown = EXCLUDE
+
+    full_name = fields.String(validate=validate.Length(min=2, max=255))
+    preferred_language = fields.String(validate=validate.Length(min=2, max=10))
+
+
+class ChangePasswordSchema(Schema):
+    """Validate password-change payload before checking the current credential."""
+    class Meta:
+        unknown = EXCLUDE
+
+    current_password = fields.String(required=True, load_only=True)
+    new_password = fields.String(
+        required=True,
+        load_only=True,
+        validate=validate.Length(min=8, max=128),
+    )

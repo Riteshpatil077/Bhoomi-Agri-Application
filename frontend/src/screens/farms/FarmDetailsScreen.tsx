@@ -37,6 +37,7 @@ import {
 } from "lucide-react";
 
 import { useAuth } from "../../context/AuthContext";
+import { useLanguage } from "../../i18n/LanguageContext";
 import {
   AppShell,
   PlotCard,
@@ -56,6 +57,7 @@ import {
   type Plot,
   type CreatePlotPayload,
 } from "../../api/farms";
+import { createRequestId } from "../../api/requestId";
 
 import "./farms.scss";
 
@@ -63,6 +65,7 @@ export function FarmDetailsScreen() {
   const { farmId } = useParams<{ farmId: string }>();
   const navigate = useNavigate();
   const { user, logout } = useAuth();
+  const { t } = useLanguage();
   const { toast } = useToast();
 
   // ─── Data State ─────────────────────────────────────────────────────────────
@@ -90,6 +93,7 @@ export function FarmDetailsScreen() {
   const [editingPlot, setEditingPlot] = useState<Plot | null>(null);
   const [plotName, setPlotName] = useState<string>("");
   const [plotAreaAcres, setPlotAreaAcres] = useState<string>("");
+  const [plotAreaEstimated, setPlotAreaEstimated] = useState(false);
   const [plotFormErrors, setPlotFormErrors] = useState<{
     plot_name?: string;
     area_acres?: string;
@@ -198,6 +202,7 @@ export function FarmDetailsScreen() {
     setEditingPlot(null);
     setPlotName("");
     setPlotAreaAcres("");
+    setPlotAreaEstimated(false);
     setPlotFormErrors({});
     setIsPlotModalOpen(true);
   };
@@ -206,6 +211,7 @@ export function FarmDetailsScreen() {
     setEditingPlot(plot);
     setPlotName(plot.plot_name);
     setPlotAreaAcres(String(plot.area_acres));
+    setPlotAreaEstimated(plot.area_is_estimated);
     setPlotFormErrors({});
     setIsPlotModalOpen(true);
   };
@@ -245,6 +251,8 @@ export function FarmDetailsScreen() {
     const payload: CreatePlotPayload = {
       plot_name: plotName.trim(),
       area_acres: parseFloat(plotAreaAcres),
+      area_is_estimated: plotAreaEstimated,
+      client_request_id: !editingPlot ? createRequestId() : undefined,
     };
 
     if (editingPlot) {
@@ -485,7 +493,7 @@ export function FarmDetailsScreen() {
                       <>
                         <MapPin size={14} />
                         <span>
-                          {farm.latitude.toFixed(4)}, {farm.longitude.toFixed(4)}
+                          {farm.location_name || "Pinned farm location"}
                         </span>
                       </>
                     ) : (
@@ -538,7 +546,7 @@ export function FarmDetailsScreen() {
                 <span className="farm-details-hero__attr-value">{plots.length}</span>
               </div>
               <div className="farm-details-hero__attr">
-                <span className="farm-details-hero__attr-label">Total Acreage</span>
+                <span className="farm-details-hero__attr-label">Total Acreage{plots.some((plot) => plot.area_is_estimated) ? " (includes estimates)" : ""}</span>
                 <span className="farm-details-hero__attr-value">
                   {totalAcreage.toFixed(2)} Acres
                 </span>
@@ -591,8 +599,8 @@ export function FarmDetailsScreen() {
             /* UI STATE 2: Empty Plots State                                   */
             /* ─────────────────────────────────────────────────────────────── */
             <EmptyState
-              title="No Plots in this Farm Yet"
-              description="Subdivide your farm into individual plots to track area acreage, monitor sowing cycles, and log fertilizer or irrigation activities."
+              title={t("No Plots in this Farm Yet")}
+              description={t("Add a plot to get started")}
               icon={Grid}
               action={
                 <button
@@ -652,23 +660,31 @@ export function FarmDetailsScreen() {
                       />
                     </FormField>
 
-                    <FormField
+                      <FormField
                       label="Area in Acres"
                       id="plot-acres-input"
                       required
                       error={plotFormErrors.area_acres}
-                      hint="Must be a positive decimal number"
+                        hint={plotAreaEstimated ? "Approximate size; you can update it with an exact measurement later." : "Choose a size or enter the measured area."}
                     >
+                        <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 10 }} aria-label="Approximate plot size">
+                          {[
+                            { label: "Small (<2 acres)", value: "1" },
+                            { label: "Medium (2–5 acres)", value: "3.5" },
+                            { label: "Large (>5 acres)", value: "6" },
+                          ].map((size) => <button key={size.label} type="button" className="btn btn-outline btn-sm" onClick={() => { setPlotAreaAcres(size.value); setPlotAreaEstimated(true); }} disabled={isSavingPlot}>{size.label}</button>)}
+                        </div>
                       <input
                         type="number"
                         step="any"
                         id="plot-acres-input"
                         className="input-field"
                         value={plotAreaAcres}
-                        onChange={(e) => setPlotAreaAcres(e.target.value)}
+                        onChange={(e) => { setPlotAreaAcres(e.target.value); setPlotAreaEstimated(false); }}
                         placeholder="e.g. 2.5"
                         disabled={isSavingPlot}
                       />
+                      {plotAreaEstimated && <p role="status" style={{ color: "#7A4B00", fontSize: 13, marginTop: 6 }}>Approximate estimate — update when you know the measured area.</p>}
                     </FormField>
                   </div>
 

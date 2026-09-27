@@ -20,6 +20,23 @@ def create_app(config_name: str | None = None) -> Flask:
 
     app = Flask(__name__)
     app.config.from_object(config_map[config_name])
+    # A standalone local Flask server often runs without the Redis service
+    # used by Docker Compose. Keep API requests (including CORS preflights)
+    # available in that setup; development opts into Redis only through the
+    # current RATELIMIT_STORAGE_URI setting. The legacy RATELIMIT_STORAGE_URL
+    # alias remains supported by BaseConfig outside this local fallback.
+    if (
+        config_name == "development"
+        and not os.environ.get("RATELIMIT_STORAGE_URI")
+    ):
+        app.config["RATELIMIT_STORAGE_URI"] = "memory://"
+
+    if config_name == "production":
+        # Read secrets at factory invocation, rather than relying on import-time
+        # class attributes, so secret injection by the host is honored reliably.
+        app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "")
+        app.config["JWT_SECRET_KEY"] = os.environ.get("JWT_SECRET_KEY", "")
+        config_map[config_name].validate(app.config)
 
     # ------------------------------------------------------------------ #
     # Extensions                                                           #
@@ -65,6 +82,11 @@ def create_app(config_name: str | None = None) -> Flask:
     app.register_blueprint(farm_activities_bp, url_prefix="/api/activities")
     app.register_blueprint(notifications_bp, url_prefix="/api/notifications")
     app.register_blueprint(weather_bp, url_prefix="/api/weather")
+
+    # Keep asynchronous work inside the same application factory lifecycle so
+    # tests, CLI commands, and WSGI workers all receive the identical Celery setup.
+    from .celery_app import make_celery
+    make_celery(app)
 
     # ------------------------------------------------------------------ #
     # CLI commands                                                         #

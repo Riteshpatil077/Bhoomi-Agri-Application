@@ -31,8 +31,10 @@ import {
   Sun,
   ShieldCheck,
   Tractor,
+  Sprout,
 } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
+import { useLanguage } from "../../i18n/LanguageContext";
 import {
   AppShell,
   EmptyState,
@@ -59,6 +61,7 @@ import "./DashboardScreen.scss";
 
 export function DashboardScreen() {
   const { user } = useAuth();
+  const { t } = useLanguage();
   const { toast } = useToast();
   const navigate = useNavigate();
   const abortRef = useRef<AbortController | null>(null);
@@ -79,6 +82,7 @@ export function DashboardScreen() {
 
   const [isLoadingWeather, setIsLoadingWeather] = useState(true);
   const [forecast, setForecast] = useState<ForecastRecord | null>(null);
+  const [weatherLocationName, setWeatherLocationName] = useState("");
   const [provenance, setProvenance] = useState<WeatherProvenance | null>(null);
   const [isWeatherStale, setIsWeatherStale] = useState(false);
   const [urgentAlerts, setUrgentAlerts] = useState<AdvisoryRecord[]>([]);
@@ -118,7 +122,9 @@ export function DashboardScreen() {
     setIsLoadingTasks(true);
     setTasksError(null);
     try {
-      const res = await fetchActivities({ is_completed: false });
+      const now = new Date();
+      const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+      const res = await fetchActivities({ is_completed: false, to_date: today });
       if (res.error) setTasksError(res.error);
       else setTasks(res.data?.activities ?? []);
     } catch {
@@ -132,9 +138,28 @@ export function DashboardScreen() {
     setIsLoadingWeather(true);
     setWeatherError(null);
     try {
+      const farmsRes = await fetchFarms();
+      if (farmsRes.error || !farmsRes.data) {
+        setWeatherError(farmsRes.error || "Could not load your farm location.");
+        setForecast(null);
+        setUrgentAlerts([]);
+        return;
+      }
+      const farm = farmsRes.data.farms.find(
+        (item) => item.latitude != null && item.longitude != null
+      );
+      if (!farm) {
+        setWeatherLocationName("");
+        setWeatherError("Add coordinates to a farm to see local weather.");
+        setForecast(null);
+        setUrgentAlerts([]);
+        return;
+      }
+      setWeatherLocationName(farm.name);
+      const region = `FARM-${farm.id}-${farm.latitude!.toFixed(3)}-${farm.longitude!.toFixed(3)}`;
       const [forecastRes, advisoriesRes] = await Promise.all([
-        fetchForecast(),
-        fetchAdvisories(),
+        fetchForecast({ region, latitude: farm.latitude!, longitude: farm.longitude! }),
+        fetchAdvisories({ region }),
       ]);
 
       if (forecastRes.error && !forecastRes.data) {
@@ -159,11 +184,16 @@ export function DashboardScreen() {
   }, []);
 
   const loadAll = useCallback(() => {
+    // The dashboard is shared across account types, but these data modules
+    // are farmer-only. Avoid issuing requests that the backend correctly
+    // rejects for buyers, experts, and service providers.
+    if (user?.user_type !== "farmer") return;
+
     loadFarmsData();
     loadCyclesData();
     loadTasksData();
     loadWeatherData();
-  }, [loadFarmsData, loadCyclesData, loadTasksData, loadWeatherData]);
+  }, [user?.user_type, loadFarmsData, loadCyclesData, loadTasksData, loadWeatherData]);
 
   useEffect(() => {
     loadAll();
@@ -204,32 +234,44 @@ export function DashboardScreen() {
   // Render
   // ─────────────────────────────────────────────────────────────────────────────
 
+  if (user?.user_type !== "farmer") {
+    return (
+      <AppShell>
+        <EmptyState
+          icon={Sprout}
+          title={`${user?.user_type ? user.user_type.charAt(0).toUpperCase() + user.user_type.slice(1) : "Account"} workspace`}
+          description="Farmer farm-management features are only available to farmer accounts. Role-specific services for this account type will appear here when their modules are enabled."
+        />
+      </AppShell>
+    );
+  }
+
   return (
     <AppShell>
       <div className="dashboard-screen">
         {/* ── Forest-Green Welcome Panel (§12.2) ───────────────────────────── */}
-        <section className="dashboard-screen__welcome-panel" aria-label="Welcome">
+        <section className="dashboard-screen__welcome-panel" aria-label={t("Welcome")}>
           <div className="dashboard-screen__welcome-panel-text">
             <div className="dashboard-screen__welcome-panel-badge-row">
               <StatusBadge
                 variant={badgeVariant}
                 label={
                   verStatus === "verified"
-                    ? "Verified Farmer"
+                    ? t("Verified Farmer")
                     : verStatus === "pending"
-                    ? "Verification Pending"
-                    : "Verification Needed"
+                    ? t("Verification Pending")
+                    : t("Verification Needed")
                 }
               />
               <span style={{ fontSize: "0.85rem", opacity: 0.9 }}>
-                Role: {user?.platform_role === "super_admin" ? "Super Admin" : user?.user_type || "Farmer"}
+                {t("Role")}: {user?.platform_role === "super_admin" ? t("Super Admin") : t(user?.user_type || "Farmer")}
               </span>
             </div>
             <h1 className="dashboard-screen__welcome-panel-title">
-              Namaste, {user?.full_name ? user.full_name.split(" ")[0] : "Farmer"}!
+              {t("Namaste")}, {user?.full_name ? user.full_name.split(" ")[0] : t("Farmer")}!
             </h1>
             <p className="dashboard-screen__welcome-panel-subtitle">
-              Here is what needs attention across your agricultural holdings today.
+              {t("Here is what needs attention across your agricultural holdings today.")}
             </p>
           </div>
 
@@ -237,12 +279,12 @@ export function DashboardScreen() {
             {verStatus !== "verified" && (
               <Link to="/verification" className="btn btn-outline" style={{ background: "#FFFFFF", color: "#2F5D3A" }}>
                 <ShieldCheck size={16} aria-hidden="true" />
-                Complete Verification
+                {t("Complete Verification")}
               </Link>
             )}
             <Link to="/activities" className="btn btn-primary" style={{ background: "#3D7A4D" }}>
               <Plus size={16} aria-hidden="true" />
-              Log Activity
+              {t("Log Activity")}
             </Link>
           </div>
         </section>
@@ -255,16 +297,16 @@ export function DashboardScreen() {
               🏡
             </div>
             <div className="dashboard-screen__metric-card-info">
-              <span className="dashboard-screen__metric-card-label">My Farms</span>
+              <span className="dashboard-screen__metric-card-label">{t("My Farms")}</span>
               <span className="dashboard-screen__metric-card-value">
                 {isLoadingFarms ? "…" : farms.length}
               </span>
               <span className="dashboard-screen__metric-card-subtext">
                 {isLoadingFarms
-                  ? "Loading..."
+                  ? t("Loading...")
                   : farms.length === 1
-                  ? "1 registered farm"
-                  : `${farms.length} registered farms`}
+                  ? t("1 registered farm")
+                  : t("{count} registered farms").replace("{count}", String(farms.length))}
               </span>
             </div>
           </Link>
@@ -326,7 +368,7 @@ export function DashboardScreen() {
               <span className="dashboard-screen__metric-card-subtext">
                 {isLoadingWeather
                   ? "Loading..."
-                  : forecast?.payload?.condition || "Pune Feed"}
+                  : forecast?.payload?.condition || weatherLocationName || "Farm location"}
               </span>
             </div>
           </Link>
@@ -357,18 +399,18 @@ export function DashboardScreen() {
               </section>
             )}
 
-            {/* Today's Tasks Section (§12.2) */}
-            <section className="dashboard-screen__section-card" aria-label="Today's farm tasks">
+            {/* Tasks due today or overdue (§12.2) */}
+            <section className="dashboard-screen__section-card" aria-label="Farm tasks due today or overdue">
               <div className="dashboard-screen__section-card-header">
                 <h2 className="dashboard-screen__section-card-title">
                   <Clock size={20} style={{ color: "#2F5D3A" }} aria-hidden="true" />
-                  Scheduled Farm Tasks
+                  {t("Tasks Due Today")}
                   <span className="dashboard-screen__section-card-count">
                     {tasks.length}
                   </span>
                 </h2>
                 <Link to="/activities" className="dashboard-screen__section-card-link">
-                  View all activities <ArrowRight size={14} aria-hidden="true" />
+                  {t("View all activities")} <ArrowRight size={14} aria-hidden="true" />
                 </Link>
               </div>
 
@@ -398,8 +440,8 @@ export function DashboardScreen() {
               {!isLoadingTasks && !tasksError && tasks.length === 0 && (
                 <EmptyState
                   icon={Calendar}
-                  title="No Pending Tasks Today"
-                  description="All scheduled farm activities are completed. Plan and log upcoming irrigation or fertilization."
+                  title="No Tasks Due Today"
+                  description="You have no incomplete activities due today or overdue. Plan an upcoming irrigation or fertilization."
                   action={
                     <button
                       type="button"
@@ -619,7 +661,7 @@ export function DashboardScreen() {
               {!isLoadingFarms && !farmsError && farms.length === 0 && (
                 <EmptyState
                   title="No Farms Added Yet"
-                  description="Register your first agricultural land to organize plots."
+                  description="Start by creating a farm, adding a plot, and logging your first sowing."
                   action={
                     <button
                       type="button"

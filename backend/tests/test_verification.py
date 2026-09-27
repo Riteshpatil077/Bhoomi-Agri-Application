@@ -16,6 +16,7 @@ from __future__ import annotations
 import uuid
 from datetime import timedelta
 import pytest
+from unittest.mock import patch
 
 from app.models.base import utc_now
 
@@ -95,6 +96,14 @@ def _grant_permission(app, admin_id: uuid.UUID, permission_key: str = "verificat
 
 class TestPresignedUploadUrl:
     """Tests for POST /api/verification/upload-url."""
+
+    def test_storage_clients_return_none_without_aws_credentials(self, app):
+        from app.utils.storage import PrivateVerificationStorage, PublicMediaStorage
+
+        with app.app_context(), patch("boto3.Session") as session_factory:
+            session_factory.return_value.get_credentials.return_value = None
+            assert PrivateVerificationStorage._get_client() is None
+            assert PublicMediaStorage._get_client() is None
 
     def test_authenticated_user_can_get_upload_url(self, app, client):
         phone = "9700000001"
@@ -541,6 +550,7 @@ class TestRetentionPurgeJob:
             assert result["purged_records"] >= 1
 
             # Verify expired application was purged
+            db.session.expire_all()
             purged = FarmerVerification.query.get(expired_id)
             assert purged.selfie_photo_key == "[PURGED]"
             assert purged.land_photo_key == "[PURGED]"
@@ -557,3 +567,28 @@ class TestRetentionPurgeJob:
             ).first()
             assert purge_log is not None
             assert purge_log.reason == "Automated retention policy document purge per §5"
+
+    def test_purge_failure_leaves_document_keys_retryable(self, app):
+        from unittest.mock import patch
+        from app.extensions import db
+        from app.models.verification import FarmerVerification
+        from app.tasks.verification import purge_expired_verification_docs
+
+        farmer = _create_user(app, "9700000051")
+        expired = FarmerVerification(
+            id=uuid.uuid4(),
+            user_id=farmer.id,
+            selfie_photo_key=f"verifications/{farmer.id}/selfie_retry.jpg",
+            land_photo_key=f"verifications/{farmer.id}/land_retry.jpg",
+            status="verified",
+            docs_purge_at=utc_now() - timedelta(days=1),
+        )
+        with app.app_context():
+            db.session.add(expired)
+            db.session.commit()
+            with patch("app.tasks.verification.PrivateVerificationStorage.delete_object", return_value=False):
+                result = purge_expired_verification_docs()
+            db.session.refresh(expired)
+            assert result["failed_records"] == 1
+            assert result["status"] == "partial"
+            assert expired.selfie_photo_key.endswith("selfie_retry.jpg")

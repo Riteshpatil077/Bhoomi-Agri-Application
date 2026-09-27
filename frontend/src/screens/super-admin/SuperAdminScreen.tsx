@@ -35,6 +35,8 @@ import type {
   GrantInfo,
 } from "../../api/superAdmin";
 import type { AdminUserListItem } from "../../api/admin";
+import { fetchMyAdminPermissions } from "../../api/admin";
+import { fetchPlatformSettings, updatePlatformSetting, type PlatformSetting } from "../../api/superAdmin";
 import { AppShell } from "../../design-system/components/AppShell/AppShell";
 import { StatusBadge } from "../../design-system/components/StatusBadge/StatusBadge";
 import type { BadgeVariant } from "../../design-system/components/StatusBadge/StatusBadge";
@@ -48,15 +50,31 @@ const STANDARD_PERMISSIONS = [
   "content_moderation",
   "user_reports",
   "audit_log_view",
+  "chat_support_view",
 ];
 
-type SATab = "admins" | "permissions" | "audit";
+type SATab = "admins" | "permissions" | "audit" | "settings";
 
 export const SuperAdminScreen: React.FC = () => {
   const { user } = useAuth();
   const { toast } = useToast();
 
   const [activeTab, setActiveTab] = useState<SATab>("admins");
+  const [auditGrant, setAuditGrant] = useState(false);
+  const [settings, setSettings] = useState<PlatformSetting[]>([]);
+  const [settingsLoading, setSettingsLoading] = useState(false);
+  const [settingsError, setSettingsError] = useState<string | null>(null);
+  const [settingKey, setSettingKey] = useState("platform.support_email");
+  const [settingValue, setSettingValue] = useState("");
+  const [settingSaving, setSettingSaving] = useState(false);
+
+  useEffect(() => {
+    fetchMyAdminPermissions().then((res) => {
+      setAuditGrant(Boolean(res.data?.permissions?.some((item) =>
+        (typeof item === "string" ? item : item.permission_key) === "audit_log_view"
+      )));
+    });
+  }, []);
 
   // ── Admin List State ────────────────────────────────────────────────────
   const [admins, setAdmins] = useState<AdminUserListItem[]>([]);
@@ -245,8 +263,50 @@ export const SuperAdminScreen: React.FC = () => {
   }, [auditPage, auditFilters]);
 
   useEffect(() => {
-    if (activeTab === "audit") loadAuditLogs();
-  }, [activeTab, loadAuditLogs]);
+    if (activeTab === "audit" && auditGrant) loadAuditLogs();
+  }, [activeTab, auditGrant, loadAuditLogs]);
+
+  const loadSettings = useCallback(async () => {
+    setSettingsLoading(true);
+    setSettingsError(null);
+    try {
+      const res = await fetchPlatformSettings();
+      if (res.error || !res.data) {
+        setSettingsError(res.error || "Failed to load platform settings.");
+        return;
+      }
+      setSettings(res.data.settings || []);
+    } finally {
+      setSettingsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (activeTab === "settings") loadSettings();
+  }, [activeTab, loadSettings]);
+
+  const handleSaveSetting = async (event: React.FormEvent) => {
+    event.preventDefault();
+    let value: unknown;
+    try {
+      value = JSON.parse(settingValue);
+    } catch {
+      value = settingValue;
+    }
+    setSettingSaving(true);
+    try {
+      const res = await updatePlatformSetting(settingKey.trim(), value);
+      if (res.error || !res.data) {
+        toast.error(res.error || "Failed to save setting.");
+        return;
+      }
+      toast.success("Platform setting saved.");
+      setSettingValue("");
+      loadSettings();
+    } finally {
+      setSettingSaving(false);
+    }
+  };
 
   // ── Create Admin Handler ────────────────────────────────────────────────
   const validateCreateForm = (): boolean => {
@@ -400,14 +460,19 @@ export const SuperAdminScreen: React.FC = () => {
             <Key size={18} />
             Permission Grants
           </button>
+          {auditGrant && <button
+              type="button"
+              className={`sa-screen__tab-btn ${activeTab === "audit" ? "sa-screen__tab-btn--active" : ""}`}
+              onClick={() => setActiveTab("audit")}
+            >
+              <ScrollText size={18} />
+              Audit Log
+            </button>}
           <button
             type="button"
-            className={`sa-screen__tab-btn ${activeTab === "audit" ? "sa-screen__tab-btn--active" : ""}`}
-            onClick={() => setActiveTab("audit")}
-          >
-            <ScrollText size={18} />
-            Audit Log
-          </button>
+            className={`sa-screen__tab-btn ${activeTab === "settings" ? "sa-screen__tab-btn--active" : ""}`}
+            onClick={() => setActiveTab("settings")}
+          ><Key size={18} /> Platform Settings</button>
         </nav>
 
         {/* ── TAB 1: ADMIN ACCOUNTS ──────────────────────────────────────── */}
@@ -749,7 +814,7 @@ export const SuperAdminScreen: React.FC = () => {
         )}
 
         {/* ── TAB 3: AUDIT LOG ──────────────────────────────────────────── */}
-        {activeTab === "audit" && (
+        {activeTab === "audit" && auditGrant && (
           <section aria-labelledby="tab-audit-title">
             <h2 id="tab-audit-title" className="sr-only">Platform Audit Log</h2>
 
@@ -904,6 +969,33 @@ export const SuperAdminScreen: React.FC = () => {
                 </div>
               </div>
             )}
+          </section>
+        )}
+
+        {activeTab === "settings" && (
+          <section aria-labelledby="tab-settings-title">
+            <h2 id="tab-settings-title" className="sr-only">Platform Settings</h2>
+            <p>Manage persisted key/value configuration. Values are stored as JSON when valid, otherwise as text.</p>
+            <form className="sa-screen__toolbar" onSubmit={handleSaveSetting}>
+              <input className="input-field" aria-label="Setting key" value={settingKey} onChange={(e) => setSettingKey(e.target.value)} required pattern="[a-z][a-z0-9_.-]{0,119}" />
+              <input className="input-field" aria-label="Setting value" placeholder='Value (e.g. "help@example.org" or true)' value={settingValue} onChange={(e) => setSettingValue(e.target.value)} required />
+              <button className="btn btn-primary" type="submit" disabled={settingSaving}>{settingSaving ? "Saving…" : "Save setting"}</button>
+            </form>
+            {settingsError && <div className="sa-screen__alert-box" role="alert">{settingsError}</div>}
+            <div className="sa-screen__table-wrapper">
+              <table className="sa-screen__table">
+                <thead><tr><th>Key</th><th>Value</th><th>Updated</th></tr></thead>
+                <tbody>
+                  {settingsLoading && <tr><td colSpan={3}>Loading settings…</td></tr>}
+                  {!settingsLoading && settings.length === 0 && <tr><td colSpan={3}>No platform settings have been saved.</td></tr>}
+                  {!settingsLoading && settings.map((item) => <tr key={item.key}>
+                    <td><code>{item.key}</code></td>
+                    <td><button className="btn btn-outline" type="button" onClick={() => { setSettingKey(item.key); setSettingValue(typeof item.value === "string" ? item.value : JSON.stringify(item.value)); }}>{JSON.stringify(item.value)}</button></td>
+                    <td>{item.updated_at ? new Date(item.updated_at).toLocaleString() : "—"}</td>
+                  </tr>)}
+                </tbody>
+              </table>
+            </div>
           </section>
         )}
 

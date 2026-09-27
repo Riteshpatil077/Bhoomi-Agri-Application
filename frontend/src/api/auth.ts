@@ -66,6 +66,14 @@ interface RegisterResponse {
   message: string;
 }
 
+export interface CurrentUserResponse {
+  user: AuthUser;
+}
+
+export interface ProfileUpdateResponse extends CurrentUserResponse {
+  message: string;
+}
+
 // ─── API Calls ────────────────────────────────────────────────────────────────
 
 /**
@@ -73,7 +81,7 @@ interface RegisterResponse {
  * Called on app mount to restore session from existing httpOnly cookie.
  */
 export async function fetchCurrentUser() {
-  return api.get<AuthUser>("/auth/me");
+  return api.get<CurrentUserResponse>("/auth/me");
 }
 
 /**
@@ -137,7 +145,7 @@ export async function logoutAll() {
  * Does NOT accept platform_role — would be silently ignored server-side anyway (§7.6).
  */
 export async function updateProfile(payload: UpdateProfilePayload) {
-  return api.patch<AuthUser>("/auth/me", payload, csrfHeaders());
+  return api.patch<ProfileUpdateResponse>("/auth/me", payload, csrfHeaders());
 }
 
 /**

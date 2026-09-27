@@ -66,6 +66,13 @@ export interface AuditLogsParams {
   resource_type?: string;
 }
 
+export interface PlatformSetting {
+  key: string;
+  value: unknown;
+  updated_by: string | null;
+  updated_at: string | null;
+}
+
 // ─── API Functions ──────────────────────────────────────────────────────────────
 
 /**
@@ -165,4 +172,16 @@ export async function fetchAuditLogs(params?: AuditLogsParams) {
   if (params?.resource_type) qp.set("resource_type", params.resource_type);
   const qs = qp.toString() ? `?${qp.toString()}` : "";
   return api.get<AuditLogsResponse>(`/super-admin/audit-logs${qs}`);
+}
+
+export async function fetchPlatformSettings() {
+  return api.get<{ settings: PlatformSetting[] }>("/super-admin/settings");
+}
+
+export async function updatePlatformSetting(key: string, value: unknown) {
+  return api.put<{ message: string; setting: PlatformSetting }>(
+    `/super-admin/settings/${encodeURIComponent(key)}`,
+    { value },
+    csrfHeaders()
+  );
 }

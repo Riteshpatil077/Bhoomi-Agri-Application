@@ -47,6 +47,7 @@ export const PlotCard: React.FC<PlotCardProps> = ({
           <span className="plot-card__acres-number">{plot.area_acres}</span>
           <span className="plot-card__acres-label">Acres</span>
         </div>
+        {plot.area_is_estimated && <span role="status" className="plot-card__estimate-badge">Approximate estimate</span>}
 
         {/* Real active cycle count */}
         <div

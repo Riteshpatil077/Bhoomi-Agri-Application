@@ -20,7 +20,8 @@ import pytest
 # --------------------------------------------------------------------------- #
 
 def _create_user(app, phone: str, password: str = "Secure@1234",
-                 name: str = "Test Farmer") -> "User":
+                 name: str = "Test Farmer", verification_status: str = "verified",
+                 user_type: str = "farmer") -> "User":
     from app.extensions import db
     from app.models.user import User
 
@@ -37,8 +38,8 @@ def _create_user(app, phone: str, password: str = "Secure@1234",
             phone_number=phone,
             email=f"user_{phone}@bhoomi.test",
             platform_role="user",
-            user_type="farmer",
-            verification_status="verified",
+            user_type=user_type,
+            verification_status=verification_status,
             is_phone_verified=True,
             is_active=True,
         )
@@ -119,6 +120,10 @@ class TestFarmsCRUD:
                 "latitude": 18.5204,
                 "longitude": 73.8567,
                 "soil_type": "Black Loam",
+                "location_name": "Pune",
+                "soil_type_source": "farmer_provided",
+                "soil_region": "Pune district",
+                "client_request_id": "175bd540-5da2-485c-9733-6683f478ae98",
             },
             headers={"X-CSRF-TOKEN": csrf},
             content_type="application/json",
@@ -127,7 +132,18 @@ class TestFarmsCRUD:
         farm = create_resp.get_json()["farm"]
         assert farm["name"] == "Green Valley Estate"
         assert farm["soil_type"] == "Black Loam"
+        assert farm["location_name"] == "Pune"
+        assert farm["soil_type_source"] == "farmer_provided"
         farm_id = farm["id"]
+
+        duplicate_resp = client.post(
+            "/api/farms",
+            json={"name": "Duplicate retry", "client_request_id": "175bd540-5da2-485c-9733-6683f478ae98"},
+            headers={"X-CSRF-TOKEN": csrf},
+            content_type="application/json",
+        )
+        assert duplicate_resp.status_code == 200
+        assert duplicate_resp.get_json()["farm"]["id"] == farm_id
 
         # 2. List farms
         list_resp = client.get("/api/farms", headers={"X-CSRF-TOKEN": csrf})
@@ -200,7 +216,7 @@ class TestPlotsCRUD:
         # 1. Create plot
         p_resp = client.post(
             f"/api/plots/farm/{farm_id}",
-            json={"plot_name": "North Field", "area_acres": 4.5},
+            json={"plot_name": "North Field", "area_acres": 4.5, "area_is_estimated": True, "client_request_id": "e9d9fa67-1d17-4b14-a6ae-58f9b92c982e"},
             headers={"X-CSRF-TOKEN": csrf},
             content_type="application/json",
         )
@@ -208,7 +224,17 @@ class TestPlotsCRUD:
         plot = p_resp.get_json()["plot"]
         assert plot["plot_name"] == "North Field"
         assert plot["area_acres"] == 4.5
+        assert plot["area_is_estimated"] is True
         plot_id = plot["id"]
+
+        duplicate_plot = client.post(
+            f"/api/plots/farm/{farm_id}",
+            json={"plot_name": "Retry", "area_acres": 9, "client_request_id": "e9d9fa67-1d17-4b14-a6ae-58f9b92c982e"},
+            headers={"X-CSRF-TOKEN": csrf},
+            content_type="application/json",
+        )
+        assert duplicate_plot.status_code == 200
+        assert duplicate_plot.get_json()["plot"]["id"] == plot_id
 
         # 2. List plots
         list_resp = client.get(f"/api/plots/farm/{farm_id}", headers={"X-CSRF-TOKEN": csrf})
@@ -273,6 +299,18 @@ class TestCropCyclesCRUD:
 
         # 1. Create crop cycle (expected harvest date automatically calculated)
         sowing = str(date.today())
+        same_day_harvest = client.post(
+            f"/api/crop-cycles/plot/{plot_id}",
+            json={
+                "crop_catalog_id": wheat["id"],
+                "sowing_date": sowing,
+                "expected_harvest_date": sowing,
+            },
+            headers={"X-CSRF-TOKEN": csrf},
+            content_type="application/json",
+        )
+        assert same_day_harvest.status_code == 422
+
         c_resp = client.post(
             f"/api/crop-cycles/plot/{plot_id}",
             json={
@@ -287,6 +325,14 @@ class TestCropCyclesCRUD:
         assert cycle["status"] == "active"
         assert cycle["expected_harvest_date"] is not None
         cycle_id = cycle["id"]
+
+        invalid_harvest_update = client.patch(
+            f"/api/crop-cycles/{cycle_id}",
+            json={"expected_harvest_date": sowing},
+            headers={"X-CSRF-TOKEN": csrf},
+            content_type="application/json",
+        )
+        assert invalid_harvest_update.status_code == 422
 
         # 2. Get single cycle
         get_resp = client.get(f"/api/crop-cycles/{cycle_id}", headers={"X-CSRF-TOKEN": csrf})
@@ -424,6 +470,27 @@ class TestStrictOwnerOnlyAccess:
         # 12. User B cannot delete User A's crop cycle (403)
         assert client.delete(f"/api/crop-cycles/{cycle_a_id}", headers={"X-CSRF-TOKEN": csrf_b}).status_code == 403
 
+    def test_unverified_farmer_cannot_start_crop_cycle(self, app, client):
+        phone = "9600000051"
+        _create_user(app, phone, verification_status="unverified")
+        _, csrf = _login(client, phone)
+        farm = client.post("/api/farms", json={"name": "Unverified Farm"}, headers={"X-CSRF-TOKEN": csrf})
+        farm_id = farm.get_json()["farm"]["id"]
+        plot = client.post(
+            f"/api/plots/farm/{farm_id}",
+            json={"plot_name": "Plot", "area_acres": 1},
+            headers={"X-CSRF-TOKEN": csrf},
+        )
+        plot_id = plot.get_json()["plot"]["id"]
+        crop = client.get("/api/crops").get_json()["crops"][0]
+        response = client.post(
+            f"/api/crop-cycles/plot/{plot_id}",
+            json={"crop_catalog_id": crop["id"], "sowing_date": str(date.today())},
+            headers={"X-CSRF-TOKEN": csrf},
+        )
+        assert response.status_code == 403
+        assert response.get_json()["error"] == "verification_required"
+
 
 # --------------------------------------------------------------------------- #
 # 6. Cascade Deletion Tests                                                   #
@@ -479,3 +546,51 @@ class TestCascadeDeletions:
             assert Farm.query.get(uuid.UUID(farm_id)) is None
             assert Plot.query.get(uuid.UUID(plot_id)) is None
             assert CropCycle.query.get(uuid.UUID(cycle_id)) is None
+
+
+def test_buyer_cannot_access_owned_farm_domain_resources(app, client):
+    """Domain type is checked separately from authentication and ownership."""
+    from app.extensions import db
+    from app.models.user import User
+
+    phone = "9600001099"
+    user = _create_user(app, phone)
+    _, csrf = _login(client, phone)
+    headers = {"X-CSRF-TOKEN": csrf, "Content-Type": "application/json"}
+
+    farm_response = client.post("/api/farms", json={"name": "Owned Farm"}, headers=headers)
+    assert farm_response.status_code == 201
+    farm_id = farm_response.get_json()["farm"]["id"]
+    plot_response = client.post(
+        f"/api/plots/farm/{farm_id}",
+        json={"plot_name": "Owned Plot", "area_acres": 1.5},
+        headers=headers,
+    )
+    assert plot_response.status_code == 201
+    plot_id = plot_response.get_json()["plot"]["id"]
+    crop_id = client.get("/api/crops").get_json()["crops"][0]["id"]
+    cycle_response = client.post(
+        f"/api/crop-cycles/plot/{plot_id}",
+        json={"crop_catalog_id": crop_id, "sowing_date": str(date.today())},
+        headers=headers,
+    )
+    assert cycle_response.status_code == 201
+    cycle_id = cycle_response.get_json()["crop_cycle"]["id"]
+    activity_response = client.post(
+        f"/api/activities/cycle/{cycle_id}",
+        json={"activity_type": "irrigation"},
+        headers=headers,
+    )
+    assert activity_response.status_code == 201
+    activity_id = activity_response.get_json()["activity"]["id"]
+
+    with app.app_context():
+        db.session.get(User, user.id).user_type = "buyer"
+        db.session.commit()
+
+    assert client.get("/api/farms").status_code == 403
+    assert client.get(f"/api/farms/{farm_id}").status_code == 403
+    assert client.post("/api/farms", json={"name": "Not Allowed"}, headers=headers).status_code == 403
+    assert client.get(f"/api/plots/{plot_id}").status_code == 403
+    assert client.get(f"/api/crop-cycles/{cycle_id}").status_code == 403
+    assert client.get(f"/api/activities/{activity_id}").status_code == 403

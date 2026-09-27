@@ -16,6 +16,7 @@ import {
   ChevronLeft,
   ChevronRight,
   X,
+  ScrollText,
 } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import {
@@ -26,11 +27,13 @@ import {
   reviewVerificationApplication,
   deactivateUser,
   activateUser,
+  fetchAdminAuditLogs,
 } from "../../api/admin";
 import type {
   VerificationApplicationItem,
   AdminUserListItem,
   ListUsersParams,
+  AdminAuditLogEntry,
 } from "../../api/admin";
 import { AppShell } from "../../design-system/components/AppShell/AppShell";
 import { StatusBadge } from "../../design-system/components/StatusBadge/StatusBadge";
@@ -39,7 +42,7 @@ import { EmptyState } from "../../design-system/components/EmptyState/EmptyState
 import { useToast } from "../../design-system/components/Toast/ToastContext";
 import "./AdminDashboardScreen.scss";
 
-type AdminTab = "verification" | "users";
+type AdminTab = "verification" | "users" | "audit";
 
 export const AdminDashboardScreen: React.FC = () => {
   const { user } = useAuth();
@@ -53,6 +56,12 @@ export const AdminDashboardScreen: React.FC = () => {
 
   // ── Active Tab ──────────────────────────────────────────────────────────
   const [activeTab, setActiveTab] = useState<AdminTab>("verification");
+  const [auditLogs, setAuditLogs] = useState<AdminAuditLogEntry[]>([]);
+  const [auditLoading, setAuditLoading] = useState(false);
+  const [auditError, setAuditError] = useState<string | null>(null);
+  const [auditPage, setAuditPage] = useState(1);
+  const [auditTotal, setAuditTotal] = useState(0);
+  const auditPerPage = 25;
 
   // ── Tab 1: Verification Applications State ──────────────────────────────
   const [apps, setApps] = useState<VerificationApplicationItem[]>([]);
@@ -111,7 +120,7 @@ export const AdminDashboardScreen: React.FC = () => {
         setPermissionsError(res.error || "Failed to load admin permissions.");
         return;
       }
-      setIsSuperAdmin(res.data.implicit_super_admin || res.data.platform_role === "super_admin");
+      setIsSuperAdmin(res.data.platform_role === "super_admin");
       const keys = (res.data.permissions || []).map((p) =>
         typeof p === "string" ? p : p.permission_key
       );
@@ -129,12 +138,19 @@ export const AdminDashboardScreen: React.FC = () => {
   }, [loadPermissions]);
 
   const hasGrant = useCallback(
-    (key: string): boolean => {
-      if (isSuperAdmin) return true;
-      return grantedKeys.includes(key);
-    },
-    [isSuperAdmin, grantedKeys]
+    (key: string): boolean => grantedKeys.includes(key),
+    [grantedKeys]
   );
+
+  useEffect(() => {
+    if (permissionsLoading) return;
+    const firstAvailable = (["verification", "users", "audit"] as AdminTab[]).find((tab) =>
+      hasGrant(tab === "verification" ? "verification_review" : tab === "users" ? "user_reports" : "audit_log_view")
+    );
+    if (firstAvailable && !hasGrant(activeTab === "verification" ? "verification_review" : activeTab === "users" ? "user_reports" : "audit_log_view")) {
+      setActiveTab(firstAvailable);
+    }
+  }, [activeTab, hasGrant, permissionsLoading]);
 
   // ── Load Verification Applications ──────────────────────────────────────
   const loadApplications = useCallback(async () => {
@@ -204,6 +220,28 @@ export const AdminDashboardScreen: React.FC = () => {
       loadUsers();
     }
   }, [activeTab, loadUsers, hasGrant]);
+
+  const loadAuditLogs = useCallback(async () => {
+    setAuditLoading(true);
+    setAuditError(null);
+    try {
+      const res = await fetchAdminAuditLogs({ page: auditPage, per_page: auditPerPage });
+      if (res.error || !res.data) {
+        setAuditError(res.error || "Failed to load audit logs.");
+        return;
+      }
+      setAuditLogs(res.data.audit_logs || []);
+      setAuditTotal(res.data.total || 0);
+    } catch (err: unknown) {
+      setAuditError(err instanceof Error ? err.message : "Error fetching audit logs.");
+    } finally {
+      setAuditLoading(false);
+    }
+  }, [auditPage]);
+
+  useEffect(() => {
+    if (activeTab === "audit" && hasGrant("audit_log_view")) loadAuditLogs();
+  }, [activeTab, hasGrant, loadAuditLogs]);
 
   // ── Photo View Request Handler ──────────────────────────────────────────
   const openPhotoModal = (
@@ -401,9 +439,7 @@ export const AdminDashboardScreen: React.FC = () => {
 
           <div className="admin-screen__grants-badge">
             <Shield size={16} />
-            {isSuperAdmin
-              ? "Super Admin (Full Access)"
-              : `Admin (${grantedKeys.length} active grant${grantedKeys.length === 1 ? "" : "s"})`}
+            {isSuperAdmin ? "Super Admin" : "Admin"} · {grantedKeys.length} explicit grant{grantedKeys.length === 1 ? "" : "s"}
           </div>
         </header>
 
@@ -427,7 +463,7 @@ export const AdminDashboardScreen: React.FC = () => {
 
         {/* Navigation Tabs */}
         <nav className="admin-screen__tabs" aria-label="Admin Navigation Tabs">
-          <button
+          {!permissionsLoading && hasGrant("verification_review") && <button
             type="button"
             className={`admin-screen__tab-btn ${activeTab === "verification" ? "admin-screen__tab-btn--active" : ""}`}
             onClick={() => setActiveTab("verification")}
@@ -439,20 +475,27 @@ export const AdminDashboardScreen: React.FC = () => {
                 {appsTotal}
               </span>
             )}
-          </button>
+          </button>}
 
-          <button
+          {!permissionsLoading && hasGrant("user_reports") && <button
             type="button"
             className={`admin-screen__tab-btn ${activeTab === "users" ? "admin-screen__tab-btn--active" : ""}`}
             onClick={() => setActiveTab("users")}
           >
             <Users size={18} />
             User Directory
-          </button>
+          </button>}
+          {!permissionsLoading && hasGrant("audit_log_view") && <button
+            type="button"
+            className={`admin-screen__tab-btn ${activeTab === "audit" ? "admin-screen__tab-btn--active" : ""}`}
+            onClick={() => setActiveTab("audit")}
+          >
+            <ScrollText size={18} /> Audit Log
+          </button>}
         </nav>
 
         {/* ── TAB 1: VERIFICATION APPLICATIONS ─────────────────────────── */}
-        {activeTab === "verification" && (
+        {activeTab === "verification" && hasGrant("verification_review") && (
           <section aria-labelledby="tab-verification-title">
             <h2 id="tab-verification-title" className="sr-only">Farmer Verification Reviews</h2>
 
@@ -695,7 +738,7 @@ export const AdminDashboardScreen: React.FC = () => {
         )}
 
         {/* ── TAB 2: USER DIRECTORY ────────────────────────────────────── */}
-        {activeTab === "users" && (
+        {activeTab === "users" && hasGrant("user_reports") && (
           <section aria-labelledby="tab-users-title">
             <h2 id="tab-users-title" className="sr-only">Platform User Directory</h2>
 
@@ -974,6 +1017,43 @@ export const AdminDashboardScreen: React.FC = () => {
                 )}
               </>
             )}
+          </section>
+        )}
+
+        {activeTab === "audit" && hasGrant("audit_log_view") && (
+          <section aria-label="Audit log">
+            <div className="admin-screen__toolbar">
+              <strong>{auditTotal} redacted audit event{auditTotal === 1 ? "" : "s"}</strong>
+              <button type="button" className="btn btn-outline" onClick={loadAuditLogs} disabled={auditLoading}>
+                <RefreshCw size={16} className={auditLoading ? "animate-spin" : ""} /> Refresh
+              </button>
+            </div>
+            {auditError && <div className="admin-screen__alert-box" role="alert"><AlertTriangle size={20} />{auditError}</div>}
+            <div className="admin-screen__table-wrapper">
+              <table className="admin-screen__table">
+                <thead><tr><th>Time</th><th>Actor</th><th>Action</th><th>Resource</th><th>Reason</th></tr></thead>
+                <tbody>
+                  {auditLoading && <tr><td colSpan={5}>Loading audit events…</td></tr>}
+                  {!auditLoading && auditLogs.length === 0 && !auditError && <tr><td colSpan={5}>No audit events found.</td></tr>}
+                  {!auditLoading && auditLogs.map((entry) => (
+                    <tr key={entry.id}>
+                      <td>{new Date(entry.created_at).toLocaleString()}</td>
+                      <td>{entry.actor_user_id}</td>
+                      <td>{entry.action}</td>
+                      <td>{[entry.resource_type, entry.resource_id].filter(Boolean).join(" · ") || "—"}</td>
+                      <td>{entry.reason || "—"}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            {auditTotal > auditPerPage && <div className="admin-screen__pagination">
+              <span>Page {auditPage} · {auditTotal} events</span>
+              <div style={{ display: "flex", gap: 6 }}>
+                <button type="button" className="btn btn-outline" disabled={auditPage <= 1} onClick={() => setAuditPage((p) => p - 1)}><ChevronLeft size={16} /></button>
+                <button type="button" className="btn btn-outline" disabled={auditPage * auditPerPage >= auditTotal} onClick={() => setAuditPage((p) => p + 1)}><ChevronRight size={16} /></button>
+              </div>
+            </div>}
           </section>
         )}
 

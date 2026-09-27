@@ -8,7 +8,7 @@ import uuid
 from datetime import date
 from typing import Any
 
-from sqlalchemy import func, Index
+from sqlalchemy import func, Index, UniqueConstraint
 from app.extensions import db
 from .base import UUIDPrimaryKeyMixin, TimestampMixin, utc_now
 
@@ -16,6 +16,7 @@ from .base import UUIDPrimaryKeyMixin, TimestampMixin, utc_now
 class Farm(db.Model, UUIDPrimaryKeyMixin, TimestampMixin):
     """Farm owned by a User (farmer)."""
     __tablename__ = "farms"
+    __table_args__ = (UniqueConstraint("user_id", "client_request_id", name="uq_farms_user_client_request"),)
 
     user_id = db.Column(
         db.Uuid(as_uuid=True),
@@ -24,9 +25,15 @@ class Farm(db.Model, UUIDPrimaryKeyMixin, TimestampMixin):
         index=True,
     )
     name = db.Column(db.String(255), nullable=False)
+    client_request_id = db.Column(db.String(36), nullable=True)
     latitude = db.Column(db.Float, nullable=True)
     longitude = db.Column(db.Float, nullable=True)
+    location_name = db.Column(db.String(255), nullable=True)
     soil_type = db.Column(db.String(100), nullable=True)
+    soil_type_source = db.Column(
+        db.String(30), nullable=False, default="farmer_provided", server_default="farmer_provided"
+    )
+    soil_region = db.Column(db.String(120), nullable=True)
 
     # Relationships
     user = db.relationship("User", back_populates="farms")
@@ -44,7 +51,10 @@ class Farm(db.Model, UUIDPrimaryKeyMixin, TimestampMixin):
             "name": self.name,
             "latitude": self.latitude,
             "longitude": self.longitude,
+            "location_name": self.location_name,
             "soil_type": self.soil_type,
+            "soil_type_source": self.soil_type_source,
+            "soil_region": self.soil_region,
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "updated_at": self.updated_at.isoformat() if self.updated_at else None,
         }
@@ -56,6 +66,7 @@ class Farm(db.Model, UUIDPrimaryKeyMixin, TimestampMixin):
 class Plot(db.Model, UUIDPrimaryKeyMixin, TimestampMixin):
     """Plot of land within a Farm."""
     __tablename__ = "plots"
+    __table_args__ = (UniqueConstraint("farm_id", "client_request_id", name="uq_plots_farm_client_request"),)
 
     farm_id = db.Column(
         db.Uuid(as_uuid=True),
@@ -63,8 +74,10 @@ class Plot(db.Model, UUIDPrimaryKeyMixin, TimestampMixin):
         nullable=False,
         index=True,
     )
+    client_request_id = db.Column(db.String(36), nullable=True)
     plot_name = db.Column(db.String(255), nullable=False)
     area_acres = db.Column(db.Float, nullable=False)
+    area_is_estimated = db.Column(db.Boolean, nullable=False, default=False, server_default=db.false())
 
     # Relationships
     farm = db.relationship("Farm", back_populates="plots")
@@ -81,6 +94,7 @@ class Plot(db.Model, UUIDPrimaryKeyMixin, TimestampMixin):
             "farm_id": str(self.farm_id),
             "plot_name": self.plot_name,
             "area_acres": self.area_acres,
+            "area_is_estimated": self.area_is_estimated,
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "updated_at": self.updated_at.isoformat() if self.updated_at else None,
         }

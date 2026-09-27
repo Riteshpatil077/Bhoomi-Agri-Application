@@ -233,22 +233,30 @@ class TestNotificationsModule:
         user = _create_user(app, phone)
         _, csrf = _login(client, phone)
 
-        # Send test notifications via service utility
+        # Send test notifications via service utility. External SMS is mocked;
+        # tests must never contact a paid provider.
         from app.utils.notifications import send_notification
+        from app.models.user import User
+        from app.extensions import db
+        from unittest.mock import patch
         with app.app_context():
+            db.session.get(User, user.id).phone_number = "+919500000020"
+            db.session.commit()
             n1 = send_notification(
                 user_id=user.id,
                 title="Irrigation Reminder",
                 message="Wheat plot requires irrigation tomorrow.",
                 notification_type="activity_reminder",
             )
-            n2 = send_notification(
-                user_id=user.id,
-                title="Weather Advisory",
-                message="Thunderstorm expected in Pune district.",
-                notification_type="weather_alert",
-                channel="sms",  # test delivery channel option
-            )
+            with patch("app.utils.notifications.boto3.client") as sns_client:
+                n2 = send_notification(
+                    user_id=user.id,
+                    title="Weather Advisory",
+                    message="Thunderstorm expected in Pune district.",
+                    notification_type="weather_alert",
+                    channel="sms",
+                )
+                sns_client.return_value.publish.assert_called_once()
             n1_id = str(n1.id)
             n2_id = str(n2.id)
 

@@ -34,8 +34,11 @@ def test_security_headers_present_on_api_responses(client):
     assert "microphone=()" in permissions
 
 
-def test_hsts_header_in_production_environment():
+def test_hsts_header_in_production_environment(monkeypatch):
     """Verify Strict-Transport-Security is emitted when JWT_COOKIE_SECURE is True in non-testing env."""
+    monkeypatch.setenv("SECRET_KEY", "test-production-secret-key-with-more-than-32-bytes")
+    monkeypatch.setenv("JWT_SECRET_KEY", "test-production-jwt-secret-key-with-more-than-32-bytes")
+    monkeypatch.setenv("DATABASE_URL", "postgresql://user:pass@localhost/db")
     prod_app = create_app("production")
     prod_app.config["TESTING"] = False
     with prod_app.test_client() as prod_client:
@@ -61,3 +64,39 @@ def test_cors_preflight_configuration(client):
     # Status code 200 for CORS preflight
     assert resp.status_code == 200
     assert resp.headers.get("Access-Control-Allow-Credentials") == "true"
+
+
+def test_development_cors_preflight_without_local_redis(monkeypatch):
+    """A local Flask run can answer browser preflights when Redis is not running."""
+    monkeypatch.delenv("RATELIMIT_STORAGE_URI", raising=False)
+    # Existing local .env files may still set the legacy URL name even when
+    # the Redis service is not running.
+    monkeypatch.setenv("RATELIMIT_STORAGE_URL", "redis://localhost:6379/0")
+    monkeypatch.setenv("REDIS_URL", "redis://localhost:6379/0")
+
+    dev_app = create_app("development")
+    assert dev_app.config["RATELIMIT_STORAGE_URI"] == "memory://"
+
+    with dev_app.test_client() as dev_client:
+        preflight = dev_client.open(
+            "/api/auth/me",
+            method="OPTIONS",
+            headers={
+                "Origin": "http://localhost:5173",
+                "Access-Control-Request-Method": "GET",
+                "Access-Control-Request-Headers": "content-type,x-csrftoken",
+            },
+        )
+        response = dev_client.get(
+            "/api/auth/me",
+            headers={"Origin": "http://localhost:5173"},
+        )
+
+    assert preflight.status_code == 200
+    assert preflight.headers.get("Access-Control-Allow-Origin") == "http://localhost:5173"
+    assert preflight.headers.get("Access-Control-Allow-Credentials") == "true"
+    assert "x-csrftoken" in preflight.headers.get("Access-Control-Allow-Headers", "").lower()
+    # An unauthenticated session restore is expected to return 401, but it must
+    # still be a readable CORS response so the client can handle it normally.
+    assert response.status_code == 401
+    assert response.headers.get("Access-Control-Allow-Origin") == "http://localhost:5173"

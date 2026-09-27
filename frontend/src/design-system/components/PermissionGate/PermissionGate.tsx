@@ -43,11 +43,6 @@ export const PermissionGate: React.FC<PermissionGateProps> = ({
     return condition ? <>{children}</> : <>{fallback}</>;
   }
 
-  // Super admin generally has full access on frontend convenience layer
-  if (userRole === "super_admin") {
-    return <>{children}</>;
-  }
-
   // Check specific role
   if (role && userRole !== role) {
     return <>{fallback}</>;

@@ -56,18 +56,10 @@ def list_my_permissions():
     """
     GET /api/admin/me/permissions
     Returns all *active* permission grants for the authenticated admin.
-    Super Admins receive the implicit full-access list.
+    Super Admins receive only explicitly granted permission rows. Platform
+    governance capabilities are role-gated on their dedicated endpoints.
     """
     user = current_user
-
-    if user.is_super_admin:
-        # Super admins implicitly hold all standard permissions
-        return jsonify({
-            "user_id": str(user.id),
-            "platform_role": user.platform_role,
-            "implicit_super_admin": True,
-            "permissions": list(AdminPermissionGrant.STANDARD_PERMISSIONS),
-        }), 200
 
     grants = (
         AdminPermissionGrant.query
@@ -185,6 +177,9 @@ def deactivate_user(user_id: str):
 
     body = request.get_json(silent=True) or {}
     reason = body.get("reason")
+    if not isinstance(reason, str) or len(reason.strip()) < 5:
+        return jsonify({"error": "validation_error", "message": "A reason of at least 5 characters is required."}), 422
+    reason = reason.strip()
 
     target.is_active = False
     _log_action("deactivate_user", "User", resource_id=str(uid), reason=reason)
@@ -223,9 +218,45 @@ def activate_user(user_id: str):
 
     body = request.get_json(silent=True) or {}
     reason = body.get("reason")
+    if not isinstance(reason, str) or len(reason.strip()) < 5:
+        return jsonify({"error": "validation_error", "message": "A reason of at least 5 characters is required."}), 422
+    reason = reason.strip()
 
     target.is_active = True
     _log_action("activate_user", "User", resource_id=str(uid), reason=reason)
     db.session.commit()
 
     return jsonify({"message": "User reactivated.", "user": target.to_dict()}), 200
+
+
+@admin_bp.route("/audit-logs", methods=["GET"])
+@jwt_required()
+@platform_role_required("admin", "super_admin")
+@permission_required("audit_log_view", allow_super_admin_bypass=False)
+def list_audit_logs():
+    """List redacted audit events for users with an explicit audit grant."""
+    page = max(1, request.args.get("page", 1, type=int))
+    per_page = min(max(1, request.args.get("per_page", 25, type=int)), 100)
+    query = AuditLog.query
+    actor_id = request.args.get("actor_user_id")
+    action = request.args.get("action")
+    resource_type = request.args.get("resource_type")
+    if actor_id:
+        try:
+            query = query.filter_by(actor_user_id=uuid.UUID(actor_id))
+        except ValueError:
+            return jsonify({"error": "invalid_id", "message": "Invalid actor_user_id."}), 400
+    if action:
+        query = query.filter_by(action=action)
+    if resource_type:
+        query = query.filter_by(resource_type=resource_type)
+    paginated = query.order_by(AuditLog.created_at.desc()).paginate(
+        page=page, per_page=per_page, error_out=False
+    )
+    return jsonify({
+        "audit_logs": [entry.to_dict() for entry in paginated.items],
+        "total": paginated.total,
+        "page": paginated.page,
+        "pages": paginated.pages,
+        "per_page": paginated.per_page,
+    }), 200

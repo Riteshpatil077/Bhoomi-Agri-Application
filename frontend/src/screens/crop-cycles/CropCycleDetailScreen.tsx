@@ -66,7 +66,9 @@ const STATUS_LABELS: Record<CropCycle["status"], string> = {
 const ACTIVITY_ICONS: Record<string, string> = {
   sowing:      "🌱",
   irrigation:  "💧",
+  fertilizer:   "🌿",
   fertilizing: "🌿",
+  pesticide:   "🚿",
   spraying:    "🚿",
   weeding:     "✂️",
   harvesting:  "🌾",
@@ -150,7 +152,11 @@ export function CropCycleDetailScreen() {
       }
       setIsUpdating(true);
       try {
-        await updateCropCycle(screenState.cycle.id, { status: newStatus });
+        const result = await updateCropCycle(screenState.cycle.id, { status: newStatus });
+        if (result.error || !result.data) {
+          setStatusError(result.error ?? "Could not update status.");
+          return;
+        }
         toast.success(`Cycle marked as ${newStatus}.`);
         await loadCycle();
       } catch {
@@ -174,16 +180,20 @@ export function CropCycleDetailScreen() {
     }
     const sowDate = new Date(screenState.cycle.sowing_date);
     const harDate = new Date(harvestDate);
-    if (harDate < sowDate) {
+  if (harDate <= sowDate) {
       setHarvestDateError("Harvest date must be after sowing date.");
       return;
     }
 
     setIsUpdating(true);
     try {
-      await updateCropCycle(screenState.cycle.id, {
+      const result = await updateCropCycle(screenState.cycle.id, {
         expected_harvest_date: harvestDate,
       });
+      if (result.error || !result.data) {
+        setHarvestDateError(result.error ?? "Could not update harvest date.");
+        return;
+      }
       toast.success("Harvest date updated.");
       setEditingHarvest(false);
       await loadCycle();
@@ -200,7 +210,13 @@ export function CropCycleDetailScreen() {
     if (screenState.kind !== "success") return;
     setIsDeleting(true);
     try {
-      await deleteCropCycle(screenState.cycle.id);
+      const result = await deleteCropCycle(screenState.cycle.id);
+      if (result.error || !result.data) {
+        toast.error(result.error ?? "Could not delete crop cycle.");
+        setIsDeleting(false);
+        setShowDeleteConfirm(false);
+        return;
+      }
       toast.success("Crop cycle deleted.");
       navigate("/crop-cycles");
     } catch {
@@ -363,7 +379,7 @@ export function CropCycleDetailScreen() {
                       setHarvestDate(e.target.value);
                       setHarvestDateError("");
                     }}
-                    min={cycle.sowing_date.slice(0, 10)}
+                    min={getDayAfter(cycle.sowing_date)}
                     disabled={isUpdating}
                   />
                 </FormField>
@@ -515,6 +531,7 @@ function ActivityRow({ activity }: { activity: ActivityEntry }) {
   const icon =
     ACTIVITY_ICONS[activity.activity_type.toLowerCase()] ??
     ACTIVITY_ICONS.default;
+  const activityDate = activity.completed_date ?? activity.scheduled_date ?? activity.created_at;
 
   return (
     <li className="ccd-screen__activity-row">
@@ -527,8 +544,8 @@ function ActivityRow({ activity }: { activity: ActivityEntry }) {
           <span className="ccd-screen__activity-notes">{activity.notes}</span>
         )}
       </div>
-      <time className="ccd-screen__activity-date" dateTime={activity.activity_date}>
-        {formatDate(activity.activity_date)}
+      <time className="ccd-screen__activity-date" dateTime={activityDate}>
+        {formatDate(activityDate)}
       </time>
     </li>
   );
@@ -544,4 +561,10 @@ function getCategoryIcon(category?: string | null): string {
 
 function capitalize(s: string): string {
   return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
+function getDayAfter(iso: string): string {
+  const date = new Date(`${iso.slice(0, 10)}T00:00:00`);
+  date.setDate(date.getDate() + 1);
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
 }

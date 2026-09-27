@@ -22,7 +22,7 @@ from app.models.base import utc_now
 from app.models.user import User
 from app.models.verification import FarmerVerification
 from app.models.audit import AuditLog
-from app.rbac import platform_role_required, permission_required, verified_farmer_required
+from app.rbac import platform_role_required, permission_required, user_type_required, verified_farmer_required
 from app.utils.storage import PrivateVerificationStorage, StorageException
 from app.schemas.verification import (
     UploadUrlRequestSchema,
@@ -45,6 +45,7 @@ _review_schema = ReviewVerificationSchema()
 
 @verification_bp.route("/upload-url", methods=["POST"])
 @jwt_required()
+@user_type_required("farmer")
 @limiter.limit("20 per minute")
 def request_upload_url():
     """
@@ -96,6 +97,7 @@ def request_upload_url():
 
 @verification_bp.route("/submit", methods=["POST"])
 @jwt_required()
+@user_type_required("farmer")
 def submit_verification():
     """
     POST /api/verification/submit
@@ -118,6 +120,12 @@ def submit_verification():
             "error": "invalid_object_key",
             "message": "Verification photos must belong to the authenticated user.",
         }), 403
+
+    try:
+        PrivateVerificationStorage.verify_uploaded_object(selfie_key)
+        PrivateVerificationStorage.verify_uploaded_object(land_key)
+    except StorageException as exc:
+        return jsonify({"error": "invalid_upload", "message": str(exc)}), 422
 
     # Check for existing pending verification
     existing = FarmerVerification.query.filter_by(
@@ -164,6 +172,7 @@ def submit_verification():
 
 @verification_bp.route("/status", methods=["GET"])
 @jwt_required()
+@user_type_required("farmer")
 def get_verification_status():
     """
     GET /api/verification/status

@@ -75,21 +75,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const res = await fetchCurrentUser();
 
       if (res.data) {
-        setUser(res.data);
+        setUser(res.data.user);
         setIsInitialized(true);
         setIsLoading(false);
         return;
       }
+      const isExpired = res.error?.toLowerCase().includes("expired");
 
       // Access token may be expired — try one silent refresh
-      if (res.status === 401 && !refreshAttempted.current) {
+      if (res.status === 401 && isExpired && !refreshAttempted.current) {
         refreshAttempted.current = true;
         const refreshRes = await refreshTokens();
         if (!refreshRes.error) {
           const retry = await fetchCurrentUser();
-          if (retry.data) {
-            setUser(retry.data);
-          }
+          if (retry.data) setUser(retry.data.user);
         }
       }
 
@@ -135,14 +134,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const res = await refreshTokens();
     if (!res.error) {
       const me = await fetchCurrentUser();
-      if (me.data) setUser(me.data);
+      if (me.data) setUser(me.data.user);
     }
   }, []);
 
   const updateProfile = useCallback(async (payload: UpdateProfilePayload) => {
     const res = await apiUpdateProfile(payload);
     if (res.data) {
-      setUser(res.data);
+      setUser(res.data.user);
     }
     return { error: res.error };
   }, []);

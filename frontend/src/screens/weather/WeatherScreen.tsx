@@ -18,7 +18,7 @@
  *  7. Unavailable / Stale — Explicit last-known-good warning banner without data fabrication
  */
 
-import { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef, type FormEvent } from "react";
 import {
   Cloud,
   CloudRain,
@@ -32,6 +32,7 @@ import {
   WifiOff,
   AlertCircle,
   Sparkles,
+  Search,
 } from "lucide-react";
 import {
   AppShell,
@@ -42,28 +43,18 @@ import {
 } from "../../design-system";
 import {
   fetchForecast,
-  fetchAdvisories,
+  searchWeatherCities,
   type ForecastRecord,
   type WeatherProvenance,
   type AdvisoryRecord,
 } from "../../api/weather";
+import { fetchFarms, type Farm } from "../../api/farms";
 import "./WeatherScreen.scss";
 
-// ─── Preset Regions ──────────────────────────────────────────────────────────
-
-interface RegionPreset {
-  code: string;
-  name: string;
-  zone: string;
-}
-
-const REGION_PRESETS: RegionPreset[] = [
-  { code: "IN-MH-PUN", name: "Pune", zone: "Western Maharashtra (Ghats & Plains)" },
-  { code: "IN-MH-NAS", name: "Nashik", zone: "Khandesh & Wine/Grape Belt" },
-  { code: "IN-MH-NAG", name: "Nagpur", zone: "Vidarbha (Orange & Cotton Belt)" },
-  { code: "IN-MH-AUR", name: "Chh. Sambhajinagar", zone: "Marathwada Central" },
-  { code: "IN-MH-KOL", name: "Kolhapur", zone: "Southern Sugar Cane Belt" },
-  { code: "IN-MH-SOL", name: "Solapur", zone: "Semi-Arid Pomegranate Zone" },
+const CITY_SUGGESTIONS = [
+  "Ahmedabad", "Bengaluru", "Bhopal", "Chennai", "Delhi", "Hyderabad",
+  "Jaipur", "Kolkata", "Kolhapur", "Lucknow", "Mumbai", "Nagpur",
+  "Nashik", "Pune", "Sambhajinagar", "Solapur", "Surat",
 ];
 
 // ─── Weather Condition Icons ─────────────────────────────────────────────────
@@ -107,7 +98,13 @@ export function WeatherScreen() {
   const { toast } = useToast();
   const abortRef = useRef<AbortController | null>(null);
 
-  const [selectedRegion, setSelectedRegion] = useState("IN-MH-PUN");
+  const [cityQuery, setCityQuery] = useState("");
+  const [selectedCity, setSelectedCity] = useState("");
+  const [resolvedCity, setResolvedCity] = useState("");
+  const [citySuggestions, setCitySuggestions] = useState<string[]>([]);
+  const [farmerFarm, setFarmerFarm] = useState<Farm | null>(null);
+  const [farmsLoaded, setFarmsLoaded] = useState(false);
+  const [farmsError, setFarmsError] = useState("");
   const [screenState, setScreenState] = useState<ScreenState>({ kind: "loading" });
   const [isRefreshing, setIsRefreshing] = useState(false);
 
@@ -117,14 +114,68 @@ export function WeatherScreen() {
   const [isStale, setIsStale] = useState(false);
   const [staleMessage, setStaleMessage] = useState("");
   const [advisories, setAdvisories] = useState<AdvisoryRecord[]>([]);
+  const [advisoriesError, setAdvisoriesError] = useState(false);
 
   // Severity filter for advisories
   const [severityFilter, setSeverityFilter] = useState<"all" | "high" | "medium" | "low">("all");
 
+  useEffect(() => {
+    let active = true;
+    fetchFarms()
+      .then((result) => {
+        if (!active) return;
+        if (result.error) {
+          setFarmsError(result.error);
+        } else {
+          const locationFarm = result.data?.farms.find(
+            (farm) => farm.latitude != null && farm.longitude != null
+          );
+          setFarmerFarm(locationFarm || null);
+        }
+        setFarmsLoaded(true);
+      })
+      .catch(() => {
+        if (!active) return;
+        setFarmsError("Could not load your farm location.");
+        setFarmsLoaded(true);
+      });
+    return () => { active = false; };
+  }, []);
+
+  useEffect(() => {
+    const query = cityQuery.trim();
+    if (query.length < 2) {
+      setCitySuggestions([]);
+      return;
+    }
+    const localSuggestions = CITY_SUGGESTIONS.filter((city) =>
+      city.toLocaleLowerCase().startsWith(query.toLocaleLowerCase())
+    );
+    let active = true;
+    const timer = window.setTimeout(async () => {
+      try {
+        const result = await searchWeatherCities(query);
+        if (!active) return;
+        const providerSuggestions = result.data?.suggestions
+          .filter((city) => city.country === "IN" && city.name.toLocaleLowerCase().startsWith(query.toLocaleLowerCase()))
+          .map((city) => [city.name, city.state, city.country].filter(Boolean).join(", ")) || [];
+        const providerNames = new Set(providerSuggestions.map((city) => city.split(",")[0].toLocaleLowerCase()));
+        const remainingLocal = localSuggestions.filter((city) => !providerNames.has(city.toLocaleLowerCase()));
+        setCitySuggestions([...new Set([...providerSuggestions, ...remainingLocal])]);
+      } catch {
+        if (active) setCitySuggestions(localSuggestions);
+      }
+    }, 350);
+    return () => {
+      active = false;
+      window.clearTimeout(timer);
+    };
+  }, [cityQuery]);
+
   // ── Load Weather & Advisories ──────────────────────────────────────────────
 
   const loadWeatherData = useCallback(
-    async (silent = false) => {
+    async (silent = false): Promise<boolean> => {
       abortRef.current?.abort();
       const ctrl = new AbortController();
       abortRef.current = ctrl;
@@ -136,12 +187,23 @@ export function WeatherScreen() {
       }
 
       try {
-        const [forecastRes, advisoriesRes] = await Promise.all([
-          fetchForecast({ region: selectedRegion }),
-          fetchAdvisories({ region: selectedRegion }),
-        ]);
+        if (!selectedCity && !farmsLoaded) return false;
+        if (!selectedCity && !farmerFarm) {
+          setScreenState({
+            kind: "error",
+            message: farmsError || "Add latitude and longitude to your farm details to show local weather, or search for a city.",
+          });
+          return false;
+        }
+        const forecastRes = await (selectedCity
+          ? fetchForecast({ city: selectedCity })
+          : fetchForecast({
+              region: `FARM-${farmerFarm!.id}-${farmerFarm!.latitude!.toFixed(3)}-${farmerFarm!.longitude!.toFixed(3)}`,
+              latitude: farmerFarm!.latitude!,
+              longitude: farmerFarm!.longitude!,
+            }));
 
-        if (ctrl.signal.aborted) return;
+        if (ctrl.signal.aborted) return false;
 
         // Check if forecast returned network/API error
         if (forecastRes.error && !forecastRes.data) {
@@ -155,26 +217,48 @@ export function WeatherScreen() {
               message: forecastRes.error ?? "Failed to fetch weather forecast.",
             });
           }
-          return;
+          return false;
         }
 
         const data = forecastRes.data;
         if (data) {
+          if (data.status === "not_found") {
+            setForecast(null);
+            setProvenance(null);
+            setResolvedCity("");
+            setAdvisories([]);
+            setAdvisoriesError(false);
+            setScreenState({ kind: "error", message: data.message });
+            return false;
+          }
+          if (data.status === "unavailable") {
+            setForecast(null);
+            setProvenance(null);
+            setResolvedCity("");
+            setIsStale(false);
+            setAdvisories([]);
+            setAdvisoriesError(false);
+            setScreenState({ kind: "unavailable" });
+            return false;
+          }
           setForecast(data.forecast);
           setProvenance(data.provenance);
+          setResolvedCity(data.location
+            ? [data.location.name, data.location.state, data.location.country]
+                .filter(Boolean)
+                .join(", ")
+            : "");
           setIsStale(Boolean(data.is_stale));
           setStaleMessage(data.message || "");
         }
 
-        if (advisoriesRes.data?.advisories) {
-          setAdvisories(advisoriesRes.data.advisories);
-        } else {
-          setAdvisories([]);
-        }
+        setAdvisories([]);
+        setAdvisoriesError(false);
 
         setScreenState({ kind: "success" });
+        return true;
       } catch (err: unknown) {
-        if (ctrl.signal.aborted) return;
+        if (ctrl.signal.aborted) return false;
         const e = err as { status?: number; message?: string };
         if (e?.status === 403) {
           setScreenState({ kind: "permission_denied" });
@@ -186,11 +270,12 @@ export function WeatherScreen() {
             message: e?.message ?? "Failed to load weather data.",
           });
         }
+        return false;
       } finally {
         setIsRefreshing(false);
       }
     },
-    [selectedRegion]
+    [selectedCity, farmerFarm, farmsLoaded, farmsError]
   );
 
   useEffect(() => {
@@ -201,8 +286,8 @@ export function WeatherScreen() {
   }, [loadWeatherData]);
 
   const handleManualRefresh = async () => {
-    await loadWeatherData(true);
-    toast.success("Weather forecast refreshed.");
+    const succeeded = await loadWeatherData(true);
+    if (succeeded) toast.success("Weather forecast refreshed.");
   };
 
   // ── Filtered Advisories ────────────────────────────────────────────────────
@@ -214,8 +299,20 @@ export function WeatherScreen() {
     );
   }, [advisories, severityFilter]);
 
-  const currentRegionPreset =
-    REGION_PRESETS.find((r) => r.code === selectedRegion) || REGION_PRESETS[0];
+  const displayLocationName = selectedCity
+    ? resolvedCity || selectedCity
+    : farmerFarm?.name || "your farm";
+
+  const handleCitySearch = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const city = cityQuery.trim();
+    if (city.length < 2) {
+      setScreenState({ kind: "error", message: "Enter at least two characters for a city name." });
+      return;
+    }
+    setSelectedCity(city);
+    setCitySuggestions([]);
+  };
 
   // ───────────────────────────────────────────────────────────────────────────
   // Render
@@ -247,25 +344,49 @@ export function WeatherScreen() {
           </button>
         </header>
 
-        {/* Region Selector Bar */}
-        <div
-          className="weather-screen__regions-bar"
-          role="region"
-          aria-label="Agricultural Region Presets"
-        >
-          {REGION_PRESETS.map((r) => (
-            <button
-              key={r.code}
-              type="button"
-              className={`weather-screen__region-chip ${
-                selectedRegion === r.code ? "weather-screen__region-chip--active" : ""
-              }`}
-              onClick={() => setSelectedRegion(r.code)}
-            >
-              📍 {r.name}
+        <form className="weather-screen__city-search" onSubmit={handleCitySearch} role="search">
+          <label className="weather-screen__city-search-label" htmlFor="weather-city-search">
+            Search weather by city
+          </label>
+          <div className="weather-screen__city-search-controls">
+            <input
+              id="weather-city-search"
+              type="search"
+              value={cityQuery}
+              onChange={(event) => setCityQuery(event.target.value)}
+              placeholder="Enter a city, e.g. Mumbai"
+              maxLength={100}
+              autoComplete="address-level2"
+              list="weather-city-suggestions"
+            />
+            <datalist id="weather-city-suggestions">
+              {citySuggestions.map((suggestion) => (
+                <option key={suggestion} value={suggestion} />
+              ))}
+            </datalist>
+            <button type="submit" disabled={screenState.kind === "loading"}>
+              <Search size={16} aria-hidden="true" /> Search
             </button>
-          ))}
-        </div>
+          </div>
+        </form>
+
+        {!selectedCity && farmerFarm && (
+          <p className="weather-screen__farmer-location">
+            📍 Showing weather for your farm: <strong>{farmerFarm.name}</strong>
+          </p>
+        )}
+        {selectedCity && farmerFarm && (
+          <button
+            type="button"
+            className="weather-screen__farm-location-btn"
+            onClick={() => {
+              setSelectedCity("");
+              setResolvedCity("");
+            }}
+          >
+            📍 Use my farm location ({farmerFarm.name})
+          </button>
+        )}
 
         {/* ── 1. Loading State ──────────────────────────────────────────────── */}
         {screenState.kind === "loading" && (
@@ -336,11 +457,13 @@ export function WeatherScreen() {
                 aria-label="Feed Provenance"
               >
                 <div className="weather-screen__provenance-banner-left">
-                  <StatusBadge variant="official" label="Official IMD Feed" size="sm" />
+                  {provenance.is_official && (
+                    <StatusBadge variant="official" label="Official Feed" size="sm" />
+                  )}
                   <span className="weather-screen__provenance-banner-source">
                     {provenance.source_name}
                   </span>
-                  <span>• Zone: {currentRegionPreset.zone}</span>
+                  <span>• Location: {displayLocationName}</span>
                 </div>
                 <div className="weather-screen__provenance-banner-times">
                   <span>
@@ -389,7 +512,7 @@ export function WeatherScreen() {
                 className={`weather-screen__hero-card ${
                   isStale ? "weather-screen__hero-card--stale" : ""
                 }`}
-                aria-label={`Current weather for ${currentRegionPreset.name}`}
+                aria-label={`Current weather for ${displayLocationName}`}
               >
                 {isStale && (
                   <span className="weather-screen__hero-card-stale-indicator">
@@ -422,7 +545,9 @@ export function WeatherScreen() {
                       <div className="weather-screen__metric-item-info">
                         <span className="weather-screen__metric-item-label">Humidity</span>
                         <span className="weather-screen__metric-item-value">
-                          {forecast.payload.humidity_percent ?? 55}%
+                          {forecast.payload.humidity_percent !== undefined
+                            ? `${forecast.payload.humidity_percent}%`
+                            : "Unavailable"}
                         </span>
                       </div>
                     </div>
@@ -432,7 +557,11 @@ export function WeatherScreen() {
                       <div className="weather-screen__metric-item-info">
                         <span className="weather-screen__metric-item-label">Precipitation</span>
                         <span className="weather-screen__metric-item-value">
-                          {forecast.payload.precipitation_probability_percent ?? 10}%
+                          {forecast.payload.precipitation_probability_percent !== undefined
+                            ? `${forecast.payload.precipitation_probability_percent}%`
+                            : forecast.payload.cloud_cover_percent !== undefined
+                              ? `${forecast.payload.cloud_cover_percent}% cloud cover`
+                              : "Unavailable"}
                         </span>
                       </div>
                     </div>
@@ -442,7 +571,9 @@ export function WeatherScreen() {
                       <div className="weather-screen__metric-item-info">
                         <span className="weather-screen__metric-item-label">Wind Speed</span>
                         <span className="weather-screen__metric-item-value">
-                          {forecast.payload.wind_speed_kmh ?? 12} km/h
+                          {forecast.payload.wind_speed_kmh !== undefined
+                            ? `${forecast.payload.wind_speed_kmh} km/h`
+                            : "Unavailable"}
                         </span>
                       </div>
                     </div>
@@ -452,7 +583,9 @@ export function WeatherScreen() {
                       <div className="weather-screen__metric-item-info">
                         <span className="weather-screen__metric-item-label">UV Index</span>
                         <span className="weather-screen__metric-item-value">
-                          {forecast.payload.uv_index ?? 5} (Mod)
+                          {forecast.payload.uv_index !== undefined
+                            ? `${forecast.payload.uv_index}`
+                            : "Unavailable"}
                         </span>
                       </div>
                     </div>
@@ -516,11 +649,13 @@ export function WeatherScreen() {
               {filteredAdvisories.length === 0 ? (
                 <EmptyState
                   icon={Cloud}
-                  title="No Active Alerts"
+                  title={advisoriesError ? "Alerts Unavailable" : "No Active Alerts"}
                   description={
-                    severityFilter !== "all"
-                      ? `No ${severityFilter}-severity alerts reported for ${currentRegionPreset.name}.`
-                      : `No active pest or extreme weather alerts reported for ${currentRegionPreset.name}. Conditions are normal.`
+                    advisoriesError
+                      ? "Advisories could not be loaded. Retry the feed to check for current alerts."
+                      : severityFilter !== "all"
+                      ? `No ${severityFilter}-severity alerts reported for ${displayLocationName}.`
+                      : `Location-specific crop advisories are not available here. The weather shown is for ${displayLocationName}.`
                   }
                   action={
                     severityFilter !== "all" ? (

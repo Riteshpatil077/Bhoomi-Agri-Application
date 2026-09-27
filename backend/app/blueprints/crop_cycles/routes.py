@@ -14,6 +14,7 @@ from marshmallow import ValidationError
 from app.extensions import db
 from app.models.farm import Farm, Plot, CropCatalog, CropCycle
 from app.schemas.farm import CreateCropCycleSchema, UpdateCropCycleSchema
+from app.rbac import user_type_required, verified_farmer_required
 
 from . import crop_cycles_bp
 
@@ -54,6 +55,7 @@ def _verify_cycle_owner(cycle_id: uuid.UUID) -> tuple[CropCycle | None, tuple[An
 
 @crop_cycles_bp.route("", methods=["GET"])
 @jwt_required()
+@user_type_required("farmer")
 def list_my_crop_cycles():
     """
     GET /api/crop-cycles
@@ -89,6 +91,7 @@ def list_my_crop_cycles():
 
 @crop_cycles_bp.route("/plot/<uuid:plot_id>", methods=["GET"])
 @jwt_required()
+@user_type_required("farmer")
 def list_crop_cycles_for_plot(plot_id: uuid.UUID):
     """
     GET /api/crop-cycles/plot/<plot_id>
@@ -118,6 +121,8 @@ def list_crop_cycles_for_plot(plot_id: uuid.UUID):
 
 @crop_cycles_bp.route("/plot/<uuid:plot_id>", methods=["POST"])
 @jwt_required()
+@user_type_required("farmer")
+@verified_farmer_required
 def create_crop_cycle(plot_id: uuid.UUID):
     """
     POST /api/crop-cycles/plot/<plot_id>
@@ -169,6 +174,7 @@ def create_crop_cycle(plot_id: uuid.UUID):
 
 @crop_cycles_bp.route("/<uuid:cycle_id>", methods=["GET"])
 @jwt_required()
+@user_type_required("farmer")
 def get_crop_cycle(cycle_id: uuid.UUID):
     """
     GET /api/crop-cycles/<cycle_id>
@@ -191,6 +197,7 @@ def get_crop_cycle(cycle_id: uuid.UUID):
 
 @crop_cycles_bp.route("/<uuid:cycle_id>", methods=["PUT", "PATCH"])
 @jwt_required()
+@user_type_required("farmer")
 def update_crop_cycle(cycle_id: uuid.UUID):
     """
     PATCH/PUT /api/crop-cycles/<cycle_id>
@@ -206,6 +213,30 @@ def update_crop_cycle(cycle_id: uuid.UUID):
         data = _update_cycle_schema.load(body)
     except ValidationError as err_val:
         return jsonify({"error": "validation_error", "messages": err_val.messages}), 422
+
+    date_errors = {}
+    expected_harvest = data.get("expected_harvest_date")
+    actual_harvest = data.get("actual_harvest_date")
+    if expected_harvest and cycle.sowing_date and expected_harvest <= cycle.sowing_date:
+        date_errors["expected_harvest_date"] = [
+            "Expected harvest date must be after sowing date."
+        ]
+    if actual_harvest and cycle.sowing_date and actual_harvest < cycle.sowing_date:
+        date_errors["actual_harvest_date"] = [
+            "Actual harvest date cannot be earlier than sowing date."
+        ]
+    if (
+        data.get("status") == "harvested"
+        and not cycle.actual_harvest_date
+        and not actual_harvest
+        and cycle.sowing_date
+        and date.today() < cycle.sowing_date
+    ):
+        date_errors["status"] = [
+            "A cycle cannot be harvested before its sowing date."
+        ]
+    if date_errors:
+        return jsonify({"error": "validation_error", "messages": date_errors}), 422
 
     if "status" in data:
         new_status = data["status"]
@@ -228,6 +259,7 @@ def update_crop_cycle(cycle_id: uuid.UUID):
 
 @crop_cycles_bp.route("/<uuid:cycle_id>", methods=["DELETE"])
 @jwt_required()
+@user_type_required("farmer")
 def delete_crop_cycle(cycle_id: uuid.UUID):
     """
     DELETE /api/crop-cycles/<cycle_id>

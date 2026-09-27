@@ -35,6 +35,7 @@ import {
 } from "lucide-react";
 
 import { useAuth } from "../../context/AuthContext";
+import { useLanguage } from "../../i18n/LanguageContext";
 import {
   AppShell,
   FormField,
@@ -59,6 +60,7 @@ export function PlotDetailsScreen() {
   const { farmId, plotId } = useParams<{ farmId: string; plotId: string }>();
   const navigate = useNavigate();
   const { user, logout } = useAuth();
+  const { t } = useLanguage();
   const { toast } = useToast();
 
   // ─── Data State ─────────────────────────────────────────────────────────────
@@ -430,7 +432,7 @@ export function PlotDetailsScreen() {
               <div className="farm-details-hero__attr">
                 <span className="farm-details-hero__attr-label">Plot Area</span>
                 <span className="farm-details-hero__attr-value" style={{ fontSize: "1.25rem", color: "#2F5D3A" }}>
-                  {plot.area_acres} Acres
+                  {plot.area_acres} Acres{plot.area_is_estimated ? " (approximate estimate)" : ""}
                 </span>
               </div>
               <div className="farm-details-hero__attr">
@@ -541,7 +543,7 @@ export function PlotDetailsScreen() {
             /* ─────────────────────────────────────────────────────────────── */
             <EmptyState
               title="No Crop Cycles on this Plot Yet"
-              description="Start your first crop cycle on this plot to track seed variety, duration to harvest, and daily farming activities."
+              description={t("Log your first sowing on this plot.")}
               icon={Sprout}
               action={
                 <button
@@ -549,7 +551,7 @@ export function PlotDetailsScreen() {
                   className="btn btn-primary"
                   onClick={() => navigate(`/crop-cycles?plotId=${plot.id}`)}
                 >
-                  Start First Crop Cycle
+                  Log First Sowing
                 </button>
               }
             />

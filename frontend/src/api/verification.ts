@@ -3,7 +3,7 @@
  *
  * Upload flow per §5:
  *   1. POST /verification/upload-url → presigned upload URL + object_key
- *   2. Client uploads file directly to S3 via the presigned URL (PUT, no auth header)
+ *   2. Client uploads file directly to S3 via a size-limited presigned POST
  *   3. POST /verification/submit → { selfie_photo_key, land_photo_key }
  *
  * CSRF tokens are injected on every mutating call per §6.
@@ -56,7 +56,7 @@ export async function fetchVerificationStatus() {
  * Request a presigned upload URL for a verification photo.
  * `photo_type`: 'selfie' | 'land'
  * `content_type`: 'image/jpeg' | 'image/png' | 'image/webp'
- * `file_size_bytes`: actual file size in bytes (enforced in presigned policy)
+ * `file_size_bytes`: actual file size in bytes (used as the presigned POST upper bound)
  */
 export async function requestUploadUrl(payload: {
   photo_type: PhotoType;
@@ -73,10 +73,7 @@ export async function requestUploadUrl(payload: {
 /**
  * Upload a file directly to S3 using a presigned URL (§5).
  * This is a direct fetch — no auth headers, no JSON content type.
- * Uses PUT with the file and the presigned fields in the URL.
- *
- * For simple presigned PUT URLs: PUT directly with the file as body.
- * For POST presigned policies (S3 multipart): build FormData with `fields`.
+ * Uses an S3 presigned POST policy, which enforces the maximum content length.
  *
  * Returns { ok: boolean; error: string | null }
  */
@@ -93,18 +90,13 @@ export async function uploadToPresignedUrl(
       return { ok: true, error: null };
     }
 
-    // Direct upload to S3 via presigned PUT (§5)
-    const headers: Record<string, string> = {
-      "Content-Type": file.type || "image/jpeg",
-    };
-    if (fields["x-amz-server-side-encryption"]) {
-      headers["x-amz-server-side-encryption"] = fields["x-amz-server-side-encryption"];
-    }
+    const form = new FormData();
+    Object.entries(fields).forEach(([key, value]) => form.append(key, value));
+    form.append("file", file);
 
     const res = await fetch(uploadUrl, {
-      method: "PUT",
-      headers,
-      body: file,
+      method: "POST",
+      body: form,
     });
 
     if (!res.ok) {

@@ -34,6 +34,11 @@ def make_celery(app: Flask) -> Celery:
             "accept_content": ["json"],
             "timezone": "UTC",
             "enable_utc": True,
+            "include": [
+                "app.tasks.activities",
+                "app.tasks.verification",
+                "app.tasks.weather",
+            ],
             # Beat schedule (§5, §7, §8)
             "beat_schedule": {
                 "purge-expired-verification-docs-hourly": {
@@ -51,7 +56,9 @@ def make_celery(app: Flask) -> Celery:
             },
         }
     )
+    # Import eagerly so task names are registered in the worker process before
+    # beat dispatches them. `include` also keeps registration correct in Celery CLI.
+    from app.tasks import activities, verification, weather  # noqa: F401
     celery.set_default()
     app.extensions["celery"] = celery
     return celery
-

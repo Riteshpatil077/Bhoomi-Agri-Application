@@ -11,6 +11,7 @@ from .weather import WeatherAdvisory
 from .auth import RefreshToken
 from .audit import AuditLog
 from .notification import Notification
+from .platform_setting import PlatformSetting
 
 __all__ = [
     "UUIDPrimaryKeyMixin",
@@ -28,4 +29,5 @@ __all__ = [
     "RefreshToken",
     "AuditLog",
     "Notification",
+    "PlatformSetting",
 ]

@@ -45,8 +45,10 @@ class BaseConfig:
     CELERY_RESULT_BACKEND: str = os.environ.get("CELERY_RESULT_BACKEND", REDIS_URL)
 
     # Rate-limiter storage
-    RATELIMIT_STORAGE_URL: str = os.environ.get(
-        "RATELIMIT_STORAGE_URL", REDIS_URL
+    # Flask-Limiter reads RATELIMIT_STORAGE_URI (not URL). Keep URL as a
+    # compatibility alias for existing local environment files.
+    RATELIMIT_STORAGE_URI: str = os.environ.get(
+        "RATELIMIT_STORAGE_URI", os.environ.get("RATELIMIT_STORAGE_URL", REDIS_URL)
     )
     RATELIMIT_HEADERS_ENABLED: bool = True
 
@@ -101,6 +103,13 @@ class BaseConfig:
         "WEATHER_API_URL", "https://api.openweathermap.org/data/2.5"
     )
 
+    SMTP_HOST: str = os.environ.get("SMTP_HOST", "")
+    SMTP_PORT: int = int(os.environ.get("SMTP_PORT", "587"))
+    SMTP_USERNAME: str = os.environ.get("SMTP_USERNAME", "")
+    SMTP_PASSWORD: str = os.environ.get("SMTP_PASSWORD", "")
+    SMTP_FROM_EMAIL: str = os.environ.get("SMTP_FROM_EMAIL", "")
+    SMTP_USE_TLS: bool = os.environ.get("SMTP_USE_TLS", "true").lower() == "true"
+
     # ------------------------------------------------------------------ #
     # Sentry                                                               #
     # ------------------------------------------------------------------ #
@@ -132,7 +141,23 @@ class TestingConfig(BaseConfig):
 
 class ProductionConfig(BaseConfig):
     JWT_COOKIE_SECURE = True
-    # In production, SECRET_KEY and JWT_SECRET_KEY MUST be set via secrets manager.
+    SECRET_KEY = os.environ.get("SECRET_KEY", "")
+    JWT_SECRET_KEY = os.environ.get("JWT_SECRET_KEY", "")
+
+    @classmethod
+    def validate(cls, config: dict) -> None:
+        for key in ("SECRET_KEY", "JWT_SECRET_KEY"):
+            value = config.get(key) or ""
+            known_values = {
+                "bhoomi-dev-secret-key-32-bytes-long-min!!",
+                "bhoomi-jwt-dev-secret-key-32-bytes-min!!",
+                "dev-secret-key-replace-in-prod",
+                "dev-jwt-secret-replace-in-prod",
+            }
+            if len(value) < 32 or value in known_values:
+                raise RuntimeError(f"Production requires a strong {key} of at least 32 characters.")
+        if not os.environ.get("DATABASE_URL"):
+            raise RuntimeError("Production requires DATABASE_URL to be configured.")
 
 
 config_map: dict[str, type[BaseConfig]] = {

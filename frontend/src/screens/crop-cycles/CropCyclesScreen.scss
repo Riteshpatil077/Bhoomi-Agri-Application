@@ -54,6 +54,22 @@
   margin: 0;
 }
 
+.cc-screen__create-card {
+  display: grid;
+  gap: $space-lg;
+  padding: $space-xl;
+  background: $color-surface;
+  border: 1.5px solid $color-border;
+  border-radius: $radius-xl;
+  box-shadow: $shadow-sm;
+}
+
+.cc-screen__create-form {
+  display: grid;
+  gap: $space-lg;
+  width: min(100%, 560px);
+}
+
 // ── Stats strip ───────────────────────────────────────────────────────────────
 .cc-screen__stats {
   display: grid;

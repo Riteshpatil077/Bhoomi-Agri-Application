@@ -19,20 +19,11 @@ import React, { useState, useId } from "react";
 import { Link } from "react-router-dom";
 import { Eye, EyeOff, AlertCircle, WifiOff, CheckCircle2 } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
+import { LANGUAGES, useLanguage } from "../../i18n/LanguageContext";
 import { FormField } from "../../design-system";
 import "./auth.scss";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
-
-const LANGUAGES = [
-  { value: "en", label: "English" },
-  { value: "hi", label: "हिन्दी" },
-  { value: "mr", label: "मराठी" },
-  { value: "pa", label: "ਪੰਜਾਬੀ" },
-  { value: "te", label: "తెలుగు" },
-  { value: "ta", label: "தமிழ்" },
-  { value: "bn", label: "বাংলা" },
-];
 
 const USER_TYPES = [
   { value: "", label: "Select role (optional)" },
@@ -65,37 +56,37 @@ interface FormErrors {
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PHONE_RE = /^\+?[0-9\s\-()]{8,15}$/;
 
-function validate(values: FormValues): FormErrors {
+function validate(values: FormValues, t: (text: string) => string): FormErrors {
   const e: FormErrors = {};
 
   if (!values.full_name.trim()) {
-    e.full_name = "Full name is required.";
+    e.full_name = t("Full name is required.");
   } else if (values.full_name.trim().length < 2) {
-    e.full_name = "Full name must be at least 2 characters.";
+    e.full_name = t("Full name must be at least 2 characters.");
   }
 
   if (!values.phone_number.trim()) {
-    e.phone_number = "Phone number is required.";
+    e.phone_number = t("Phone number is required.");
   } else if (!PHONE_RE.test(values.phone_number.trim())) {
-    e.phone_number = "Enter a valid phone number (8–15 digits).";
+    e.phone_number = t("Enter a valid phone number (8–15 digits).");
   }
 
   if (!values.email.trim()) {
-    e.email = "Email address is required.";
+    e.email = t("Email address is required.");
   } else if (!EMAIL_RE.test(values.email.trim())) {
-    e.email = "Enter a valid email address.";
+    e.email = t("Enter a valid email address.");
   }
 
   if (!values.password) {
-    e.password = "Password is required.";
+    e.password = t("Password is required.");
   } else if (values.password.length < 8) {
-    e.password = "Password must be at least 8 characters.";
+    e.password = t("Password must be at least 8 characters.");
   }
 
   if (!values.confirm_password) {
-    e.confirm_password = "Please confirm your password.";
+    e.confirm_password = t("Please confirm your password.");
   } else if (values.password !== values.confirm_password) {
-    e.confirm_password = "Passwords do not match.";
+    e.confirm_password = t("Passwords do not match.");
   }
 
   return e;
@@ -105,6 +96,7 @@ function validate(values: FormValues): FormErrors {
 
 export function RegisterScreen() {
   const { register, isLoading } = useAuth();
+  const { language, setLanguage, t } = useLanguage();
 
   const [form, setForm] = useState<FormValues>({
     full_name: "",
@@ -113,7 +105,7 @@ export function RegisterScreen() {
     password: "",
     confirm_password: "",
     user_type: "",
-    preferred_language: "en",
+    preferred_language: language,
   });
   const [errors, setErrors] = useState<FormErrors>({});
   const [touched, setTouched] = useState<Partial<Record<keyof FormValues, boolean>>>({});
@@ -132,11 +124,12 @@ export function RegisterScreen() {
 
   const handleChange = (field: keyof FormValues, value: string) => {
     setForm((prev) => ({ ...prev, [field]: value }));
+    if (field === "preferred_language") setLanguage(value);
     setApiError(null);
     setIsNetworkError(false);
     if (touched[field]) {
       const updated = { ...form, [field]: value };
-      const newErrors = validate(updated);
+      const newErrors = validate(updated, t);
       setErrors((prev) => ({ ...prev, [field]: newErrors[field as keyof FormErrors] }));
     }
     // Revalidate confirm_password when password changes
@@ -145,7 +138,7 @@ export function RegisterScreen() {
         ...prev,
         confirm_password:
           form.confirm_password && value !== form.confirm_password
-            ? "Passwords do not match."
+            ? t("Passwords do not match.")
             : undefined,
       }));
     }
@@ -153,7 +146,7 @@ export function RegisterScreen() {
 
   const handleBlur = (field: keyof FormValues) => {
     setTouched((prev) => ({ ...prev, [field]: true }));
-    const newErrors = validate(form);
+    const newErrors = validate(form, t);
     setErrors((prev) => ({ ...prev, [field]: newErrors[field as keyof FormErrors] }));
   };
 
@@ -165,7 +158,7 @@ export function RegisterScreen() {
     ) as Record<keyof FormValues, boolean>;
     setTouched(allTouched);
 
-    const validationErrors = validate(form);
+    const validationErrors = validate(form, t);
     if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors);
       return;
@@ -192,7 +185,7 @@ export function RegisterScreen() {
       if (msg.includes("network error") || msg.includes("network")) {
         // State 7 — Network unavailable
         setIsNetworkError(true);
-        setApiError("Cannot reach the server. Please check your connection and try again.");
+        setApiError(t("Cannot reach the server. Please check your connection and try again."));
       } else {
         // State 5 — API error (duplicate, server issue)
         setApiError(result.error);
@@ -204,7 +197,7 @@ export function RegisterScreen() {
 
   if (isSuccess) {
     return (
-      <main className="auth-page" aria-label="Account created">
+      <main className="auth-page" aria-label={t("Account created!")}>
         <div className="auth-card">
           <header className="auth-header">
             <div className="auth-header__logo">
@@ -216,12 +209,12 @@ export function RegisterScreen() {
             <div style={{ color: "var(--color-success)", marginBottom: "1rem" }}>
               <CheckCircle2 size={48} aria-hidden="true" />
             </div>
-            <h1 style={{ fontSize: "1.25rem", marginBottom: "0.5rem" }}>Account created!</h1>
+            <h1 style={{ fontSize: "1.25rem", marginBottom: "0.5rem" }}>{t("Account created!")}</h1>
             <p style={{ color: "var(--color-muted-text)", marginBottom: "1.5rem", fontSize: "0.9375rem" }}>
-              Welcome to Bhoomi. Sign in to get started.
+              {t("Welcome to Bhoomi. Sign in to get started.")}
             </p>
             <Link to="/login" className="btn btn-primary auth-submit">
-              Sign in now
+              {t("Sign in now")}
             </Link>
           </div>
         </div>
@@ -230,7 +223,7 @@ export function RegisterScreen() {
   }
 
   return (
-    <main className="auth-page" aria-label="Create Bhoomi account">
+      <main className="auth-page" aria-label={t("Create your account")}>
       <div className="auth-card" style={{ maxWidth: "480px" }}>
         {/* Brand header */}
         <header className="auth-header">
@@ -238,7 +231,7 @@ export function RegisterScreen() {
             <span className="auth-header__leaf" aria-hidden="true">🌱</span>
             Bhoomi
           </div>
-          <p className="auth-header__subtitle">Create your account</p>
+          <p className="auth-header__subtitle">{t("Create your account")}</p>
         </header>
 
         <div className="auth-body">
@@ -248,13 +241,13 @@ export function RegisterScreen() {
               htmlFor="reg-language"
               style={{ display: "block", fontSize: "0.8125rem", fontWeight: 600, color: "var(--color-muted-text)", marginBottom: "4px" }}
             >
-              Language / भाषा
+              {t("Language / भाषा")}
             </label>
             <select
               id="reg-language"
               className="select-field"
-              value={form.preferred_language}
-              onChange={(e) => handleChange("preferred_language", e.target.value)}
+              value={language}
+              onChange={(e) => { handleChange("preferred_language", e.target.value); setErrors({}); setTouched({}); }}
             >
               {LANGUAGES.map((l) => (
                 <option key={l.value} value={l.value}>{l.label}</option>
@@ -293,13 +286,13 @@ export function RegisterScreen() {
             )}
 
             {/* Full name */}
-            <FormField label="Full name" id={nameId} required error={touched.full_name ? errors.full_name : undefined}>
+            <FormField label={t("Full name")} id={nameId} required error={touched.full_name ? errors.full_name : undefined}>
               <input
                 id={nameId}
                 type="text"
                 className="input-field"
                 autoComplete="name"
-                placeholder="Your full name"
+                placeholder={t("Your full name")}
                 value={form.full_name}
                 disabled={isLoading}
                 onChange={(e) => handleChange("full_name", e.target.value)}
@@ -310,11 +303,11 @@ export function RegisterScreen() {
 
             {/* Phone */}
             <FormField
-              label="Phone number"
+              label={t("Phone number")}
               id={phoneId}
               required
               error={touched.phone_number ? errors.phone_number : undefined}
-              hint="Used to log in. Enter with country code (e.g. +91)."
+              hint={t("Used to log in. Enter with country code (e.g. +91).")}
             >
               <input
                 id={phoneId}
@@ -331,7 +324,7 @@ export function RegisterScreen() {
             </FormField>
 
             {/* Email */}
-            <FormField label="Email address" id={emailId} required error={touched.email ? errors.email : undefined}>
+            <FormField label={t("Email address")} id={emailId} required error={touched.email ? errors.email : undefined}>
               <input
                 id={emailId}
                 type="email"
@@ -347,7 +340,7 @@ export function RegisterScreen() {
             </FormField>
 
             {/* Role / user_type (optional) */}
-            <FormField label="I am a…" id="reg-user-type" hint="Optional — you can set this later.">
+            <FormField label={t("I am a…")} id="reg-user-type" hint={t("Optional — you can set this later.")}>
               <select
                 id="reg-user-type"
                 className="select-field"
@@ -355,21 +348,21 @@ export function RegisterScreen() {
                 disabled={isLoading}
                 onChange={(e) => handleChange("user_type", e.target.value)}
               >
-                {USER_TYPES.map((t) => (
-                  <option key={t.value} value={t.value}>{t.label}</option>
+                {USER_TYPES.map((option) => (
+                  <option key={option.value} value={option.value}>{t(option.label)}</option>
                 ))}
               </select>
             </FormField>
 
             {/* Password */}
-            <FormField label="Password" id={passwordId} required error={touched.password ? errors.password : undefined} hint="At least 8 characters.">
+            <FormField label={t("Password")} id={passwordId} required error={touched.password ? errors.password : undefined} hint={t("At least 8 characters.")}>
               <div className="input-with-toggle">
                 <input
                   id={passwordId}
                   type={showPassword ? "text" : "password"}
                   className="input-field"
                   autoComplete="new-password"
-                  placeholder="Create a password"
+                  placeholder={t("Create a password")}
                   value={form.password}
                   disabled={isLoading}
                   onChange={(e) => handleChange("password", e.target.value)}
@@ -379,7 +372,7 @@ export function RegisterScreen() {
                 <button
                   type="button"
                   className="input-with-toggle__toggle"
-                  aria-label={showPassword ? "Hide password" : "Show password"}
+                  aria-label={showPassword ? t("Hide password") : t("Show password")}
                   onClick={() => setShowPassword((v) => !v)}
                 >
                   {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
@@ -388,14 +381,14 @@ export function RegisterScreen() {
             </FormField>
 
             {/* Confirm password */}
-            <FormField label="Confirm password" id={confirmId} required error={touched.confirm_password ? errors.confirm_password : undefined}>
+            <FormField label={t("Confirm password")} id={confirmId} required error={touched.confirm_password ? errors.confirm_password : undefined}>
               <div className="input-with-toggle">
                 <input
                   id={confirmId}
                   type={showConfirm ? "text" : "password"}
                   className="input-field"
                   autoComplete="new-password"
-                  placeholder="Repeat your password"
+                  placeholder={t("Repeat your password")}
                   value={form.confirm_password}
                   disabled={isLoading}
                   onChange={(e) => handleChange("confirm_password", e.target.value)}
@@ -405,7 +398,7 @@ export function RegisterScreen() {
                 <button
                   type="button"
                   className="input-with-toggle__toggle"
-                  aria-label={showConfirm ? "Hide password" : "Show password"}
+                  aria-label={showConfirm ? t("Hide password") : t("Show password")}
                   onClick={() => setShowConfirm((v) => !v)}
                 >
                   {showConfirm ? <EyeOff size={18} /> : <Eye size={18} />}
@@ -424,18 +417,18 @@ export function RegisterScreen() {
               {isLoading ? (
                 <>
                   <span className="auth-spinner" aria-hidden="true" />
-                  <span>Creating account…</span>
+                  <span>{t("Creating account…")}</span>
                 </>
               ) : (
-                "Create account"
+                t("Create account")
               )}
             </button>
           </form>
 
           <div className="auth-footer">
             <p>
-              Already have an account?{" "}
-              <Link to="/login" className="auth-footer__link">Sign in</Link>
+              {t("Already have an account?")}{" "}
+              <Link to="/login" className="auth-footer__link">{t("Sign in")}</Link>
             </p>
           </div>
         </div>

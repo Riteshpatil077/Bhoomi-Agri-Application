@@ -2,6 +2,22 @@
 
 Updated after every completed, verified module per the Prompt 0 working agreement.
 
+## Blueprint v9 follow-up — smart farm flow and release gates
+
+**Implemented locally and verified 2026-09-27.**
+
+- Added persistent farm location/soil provenance and estimated-area fields with an Alembic migration; farm and plot create endpoints accept idempotency request IDs for safe retry.
+- Farm creation now offers GPS, a place-name field, compact soil choices, and an autosaved per-user draft. No regional soil suggestion dataset is configured, so the UI does not claim an unverified suggestion.
+- Plot creation offers Small/Medium/Large acreage estimates and marks estimated values.
+- Profile update and password-change routes already existed; added endpoint regression coverage.
+- Added a CI static rule for direct raw-SQL execution strings and removed the health endpoint's hand-written `SELECT 1`.
+- CI already runs Bandit and `pip-audit`; these existing checks remain enabled.
+- Added `docs/STAGE_1_DEPLOYMENT_AND_RECOVERY.md`. Stage 1 provisioning and the required RDS restore drill remain pending because no AWS target/account/secrets are configured in this workspace. Do not mark the drill passed until operators execute and record it.
+- Exact canonical first-run copy is applied to the dashboard and My Farms empty states.
+- Verification: `pytest -q -p no:cacheprovider` — 112 passed, 83% coverage; frontend TypeScript/Vite production build succeeds with the main JS chunk reduced from 546.69 KB to 307.56 KB; raw-SQL guard passes; Alembic upgrade succeeds on isolated SQLite.
+- `npm run lint` exits successfully but still reports 25 React hook/Fast Refresh warnings across the frontend. `flake8` is configured in CI but not installed in this local Python environment.
+- Still requires an approved map/geocoding data source for interactive map-tap location selection and verified regional soil suggestions. Farm creation currently supports browser GPS, a manually entered place name with saved-farm suggestions, and non-fabricated soil choices. No guessed city coordinates or regional soil recommendations are provided.
+
 ---
 
 ## Prompt 1 — Scaffolding ✅
@@ -643,4 +659,24 @@ All 8 backend modules of the MVP are fully implemented, verified, and passing 92
 ## All 20 Prompts Complete! 🎉
 
 The entire Bhoomi system design and production build blueprint has been implemented, thoroughly tested, and hardened across backend, frontend, RBAC, verification workflow, modern agriculture UI design system, all 7 required UI states, and security/CI requirements.
+
+---
+
+## Supplemental Role, Grant, and Dashboard Remediation ✅
+
+**Completed**: 2026-09-27
+
+### Changes
+- Added backend `user_type=farmer` enforcement to farm, plot, crop-cycle, activity, and farmer self-service verification routes; added regression coverage for changed account types.
+- Required step-up password verification for Super Admin account creation, including Super Admin promotion, with the `promote_to_super_admin` audit action.
+- Changed the farmer dashboard to query weather for a saved farm's coordinates and to show only incomplete tasks due today or overdue.
+- Removed implicit Super Admin permission bypass for explicit grants. Admin and Super Admin audit-log views now require `audit_log_view`; admin and Super Admin dashboards hide grant-gated tabs until an explicit grant is present.
+- Added a persisted `platform_settings` model/migration, Super Admin settings API and configuration panel; added an Admin-facing audit-log API and tab.
+- Updated navigation badges and farmer-only route handling to follow `user_type` and `platform_role` independently.
+
+### Verification
+- Backend suite: **110 passed** (`pytest -q --no-cov`).
+- Frontend production typecheck/build: **passed** (`npm run build`). Vite reports the existing main bundle exceeds 500 kB.
+- Frontend lint: **passed with 0 errors**; Oxlint reports warnings, including existing hook/Fast Refresh warnings.
+- Alembic reports `c4d9a7e21f8b` as the single migration head. The migration was not applied to a configured live database.
 

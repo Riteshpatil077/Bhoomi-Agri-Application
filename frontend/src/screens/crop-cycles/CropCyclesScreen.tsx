@@ -3,35 +3,41 @@
  *
  * Displays all crop cycles owned by the authenticated farmer across all farms/plots.
  * Filter by status (active | harvested | failed | all).
- * Supports inline quick-status changes, delete confirmation, and new cycle creation
- * via a modal that navigates back to the relevant plot page for full context.
+ * Supports inline quick-status changes, delete confirmation, and cycle creation
+ * from a plot selected on the farm detail screen.
  *
  * 7 mandatory UI states (§12.4):
  *  1. Loading   — skeleton grid
  *  2. Empty     — illustration + CTA to create a farm / plot first
  *  3. Success   — grid of CropCycleCards
- *  4. Validation — N/A (no standalone form on this screen)
+ *  4. Validation — cycle form validates required crop and harvest dates
  *  5. API Error  — inline error banner with retry
  *  6. Permission Denied — 403 guard
  *  7. Unavailable — network/service-down state
  */
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Sprout, Lock, Search } from "lucide-react";
 import {
   AppShell,
   EmptyState,
   ConfirmDialog,
+  FormField,
   useToast,
   CropCycleCard,
 } from "../../design-system";
 import {
+  createCropCycle,
+  fetchCropCatalog,
   fetchAllCropCycles,
   updateCropCycle,
   deleteCropCycle,
+  type CropCatalogEntry,
   type CropCycle,
 } from "../../api/cropCycles";
+import { fetchPlot, type Plot } from "../../api/farms";
+import { useAuth } from "../../context/AuthContext";
 import "./CropCyclesScreen.scss";
 
 // ─── Filter type ──────────────────────────────────────────────────────────────
@@ -57,6 +63,8 @@ type ScreenState =
 
 export function CropCyclesScreen() {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const { user } = useAuth();
   const { toast } = useToast();
 
   const [screenState, setScreenState] = useState<ScreenState>({ kind: "loading" });
@@ -65,7 +73,19 @@ export function CropCyclesScreen() {
   const [deletingCycle, setDeletingCycle] = useState<CropCycle | null>(null);
   const [isDeleting, setIsDeleting]       = useState(false);
   const [changingStatus, setChangingStatus] = useState<string | null>(null);
+  const [createPlot, setCreatePlot] = useState<Plot | null>(null);
+  const [cropCatalog, setCropCatalog] = useState<CropCatalogEntry[]>([]);
+  const [selectedCropId, setSelectedCropId] = useState("");
+  const [sowingDate, setSowingDate] = useState(() => toDateInputValue(new Date()));
+  const [expectedHarvestDate, setExpectedHarvestDate] = useState("");
+  const [createError, setCreateError] = useState<{ plotId: string; message: string } | null>(null);
+  const [isCreating, setIsCreating] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
+  const requestedPlotId = searchParams.get("plotId");
+  const resolvedCreatePlot = createPlot?.id === requestedPlotId ? createPlot : null;
+  const requestedCreateError = createError?.plotId === requestedPlotId ? createError.message : "";
+  const isLoadingCreateForm = Boolean(requestedPlotId && !resolvedCreatePlot && !requestedCreateError);
+  const isVerifiedFarmer = user?.user_type === "farmer" && user.verification_status === "verified";
 
   // ── Load ──────────────────────────────────────────────────────────────────
 
@@ -120,6 +140,90 @@ export function CropCyclesScreen() {
     return () => { abortRef.current?.abort(); };
   }, [loadCycles]);
 
+  // PlotDetailsScreen links here with ?plotId=...; resolve that plot and load
+  // the real crop catalog so the CTA starts an actual crop cycle.
+  useEffect(() => {
+    if (!requestedPlotId) return;
+
+    let active = true;
+    Promise.all([fetchPlot(requestedPlotId), fetchCropCatalog()]).then(([plotRes, cropsRes]) => {
+      if (!active) return;
+      if (plotRes.error || !plotRes.data?.plot) {
+        setCreateError({ plotId: requestedPlotId, message: plotRes.error ?? "Could not load the selected plot." });
+      } else if (cropsRes.error || !cropsRes.data) {
+        setCreateError({ plotId: requestedPlotId, message: cropsRes.error ?? "Could not load the crop catalog." });
+      } else {
+        setCreatePlot(plotRes.data.plot);
+        setCropCatalog(cropsRes.data.crops);
+      }
+    }).catch(() => {
+      if (active) setCreateError({ plotId: requestedPlotId, message: "Could not load the crop cycle form." });
+    });
+
+    return () => { active = false; };
+  }, [requestedPlotId]);
+
+  const closeCreateForm = useCallback(() => {
+    setSearchParams((current) => {
+      const next = new URLSearchParams(current);
+      next.delete("plotId");
+      return next;
+    }, { replace: true });
+    setCreatePlot(null);
+    setCreateError(null);
+    setSelectedCropId("");
+    setExpectedHarvestDate("");
+  }, [setSearchParams]);
+
+  const handleCreateCycle = useCallback(async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!createPlot) return;
+    setCreateError(null);
+    if (user?.user_type !== "farmer" || user.verification_status !== "verified") {
+      setCreateError({
+        plotId: createPlot.id,
+        message: user?.verification_status === "pending"
+          ? "Farmer verification is pending. You can start a crop cycle after it is approved."
+          : "Complete farmer verification before starting a crop cycle.",
+      });
+      return;
+    }
+    if (!selectedCropId) {
+      setCreateError({ plotId: createPlot.id, message: "Choose a crop to continue." });
+      return;
+    }
+    if (expectedHarvestDate && expectedHarvestDate <= sowingDate) {
+      setCreateError({ plotId: createPlot.id, message: "Expected harvest date must be after the sowing date." });
+      return;
+    }
+
+    setIsCreating(true);
+    let result;
+    try {
+      result = await createCropCycle(createPlot.id, {
+        crop_catalog_id: selectedCropId,
+        sowing_date: sowingDate,
+        ...(expectedHarvestDate ? { expected_harvest_date: expectedHarvestDate } : {}),
+      });
+    } catch {
+      setCreateError({ plotId: createPlot.id, message: "Could not start this crop cycle. Check your connection and try again." });
+      setIsCreating(false);
+      return;
+    }
+    setIsCreating(false);
+
+    if (result.error || !result.data) {
+      setCreateError({ plotId: createPlot.id, message: result.error ?? "Could not start this crop cycle." });
+      return;
+    }
+
+    toast.success("Crop cycle started.");
+    const alreadyShowingAll = statusFilter === "all";
+    setStatusFilter("all");
+    closeCreateForm();
+    if (alreadyShowingAll) await loadCycles();
+  }, [closeCreateForm, createPlot, expectedHarvestDate, loadCycles, selectedCropId, sowingDate, statusFilter, toast, user]);
+
   // ── Filtered list ─────────────────────────────────────────────────────────
 
   const visibleCycles = useMemo(() => {
@@ -141,7 +245,11 @@ export function CropCyclesScreen() {
     async (cycle: CropCycle, newStatus: "active" | "harvested" | "failed") => {
       setChangingStatus(cycle.id);
       try {
-        await updateCropCycle(cycle.id, { status: newStatus });
+        const result = await updateCropCycle(cycle.id, { status: newStatus });
+        if (result.error || !result.data) {
+          toast.error(result.error ?? "Could not update cycle status.");
+          return;
+        }
         toast.success(`Cycle marked as ${newStatus}.`);
         await loadCycles();
       } catch {
@@ -159,7 +267,11 @@ export function CropCyclesScreen() {
     if (!deletingCycle) return;
     setIsDeleting(true);
     try {
-      await deleteCropCycle(deletingCycle.id);
+      const result = await deleteCropCycle(deletingCycle.id);
+      if (result.error || !result.data) {
+        toast.error(result.error ?? "Could not delete crop cycle.");
+        return;
+      }
       toast.success("Crop cycle deleted.");
       setDeletingCycle(null);
       await loadCycles();
@@ -200,7 +312,62 @@ export function CropCyclesScreen() {
               Track and manage all planting cycles across your farms.
             </p>
           </div>
+          <button type="button" className="btn btn-primary" onClick={() => navigate("/farms")}>
+            Start Cycle
+          </button>
         </header>
+
+        {requestedPlotId && (
+          <section className="cc-screen__create-card" aria-label="Start crop cycle">
+            <div className="cc-screen__section-card-header">
+              <h2 className="cc-screen__section-card-title">
+                Start Cycle{resolvedCreatePlot ? ` on ${resolvedCreatePlot.plot_name}` : ""}
+              </h2>
+              <button type="button" className="btn btn-outline" onClick={closeCreateForm} disabled={isCreating}>
+                Cancel
+              </button>
+            </div>
+            {isLoadingCreateForm ? (
+              <p role="status">Loading plot and crop options…</p>
+            ) : requestedCreateError && !resolvedCreatePlot ? (
+              <div role="alert" className="cc-screen__error-banner">
+                <p>{requestedCreateError}</p>
+                <button type="button" className="btn btn-outline" onClick={closeCreateForm}>Back to cycles</button>
+              </div>
+            ) : resolvedCreatePlot && !isVerifiedFarmer ? (
+              <div role="alert" className="cc-screen__create-form">
+                <p>
+                  {user?.verification_status === "pending"
+                    ? "Farmer verification is pending. You can start a crop cycle after it is approved."
+                    : "Complete farmer verification before starting a crop cycle."}
+                </p>
+                <Link to="/verification" className="btn btn-primary">
+                  {user?.verification_status === "pending" ? "View Verification Status" : "Complete Verification"}
+                </Link>
+              </div>
+            ) : resolvedCreatePlot ? (
+              <form className="cc-screen__create-form" onSubmit={handleCreateCycle}>
+                <FormField label="Crop" required>
+                  <select className="input-field" value={selectedCropId} onChange={(event) => setSelectedCropId(event.target.value)} required disabled={isCreating}>
+                    <option value="">Select a crop</option>
+                    {cropCatalog.map((crop) => <option key={crop.id} value={crop.id}>{crop.crop_name}</option>)}
+                  </select>
+                </FormField>
+                <FormField label="Sowing date" required>
+                  <input className="input-field" type="date" value={sowingDate} onChange={(event) => setSowingDate(event.target.value)} required disabled={isCreating} />
+                </FormField>
+                <FormField label="Expected harvest date (optional)" hint="Leave blank to calculate it from the crop’s typical growing duration.">
+                  <input className="input-field" type="date" min={getDayAfter(sowingDate)} value={expectedHarvestDate} onChange={(event) => setExpectedHarvestDate(event.target.value)} disabled={isCreating} />
+                </FormField>
+                {cropCatalog.length === 0 && <p role="status">No crops are currently available in the crop catalog.</p>}
+                {requestedCreateError && <p role="alert" className="cc-screen__error-msg">{requestedCreateError}</p>}
+                <button type="submit" className="btn btn-primary" disabled={isCreating || cropCatalog.length === 0}>
+                  {isCreating ? "Starting…" : "Start Crop Cycle"}
+                </button>
+              </form>
+            ) : null}
+          </section>
+        )}
 
         {/* ── Stats Strip ─────────────────────────────────────────────────── */}
         {stats && (
@@ -383,6 +550,16 @@ export function CropCyclesScreen() {
       </div>
     </AppShell>
   );
+}
+
+function toDateInputValue(date: Date): string {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+}
+
+function getDayAfter(isoDate: string): string {
+  const date = new Date(`${isoDate}T00:00:00`);
+  date.setDate(date.getDate() + 1);
+  return toDateInputValue(date);
 }
 
 

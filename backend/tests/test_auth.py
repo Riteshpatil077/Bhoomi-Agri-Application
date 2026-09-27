@@ -407,6 +407,43 @@ def test_get_me_endpoint(client, db_session):
     assert data["user"]["email"] == "me@example.com"
 
 
+def test_patch_me_updates_profile_and_change_password(client, db_session):
+    """Profile edits and password changes called by ProfileScreen are live endpoints."""
+    user = User(full_name="Profile Tester", phone_number="+919876500015", email="profile@example.com")
+    user.set_password("Password123!")
+    db_session.add(user)
+    db_session.commit()
+
+    login = client.post("/api/auth/login", json={
+        "identifier": "+919876500015", "password": "Password123!",
+    })
+    assert login.status_code == 200
+    csrf = login.get_json()["csrf_token"]
+
+    update = client.patch("/api/auth/me", json={
+        "full_name": "Updated Profile", "preferred_language": "mr",
+    }, headers={"X-CSRF-TOKEN": csrf})
+    assert update.status_code == 200
+    assert update.get_json()["user"]["full_name"] == "Updated Profile"
+    assert update.get_json()["user"]["preferred_language"] == "mr"
+
+    mismatch = client.post("/api/auth/change-password", json={
+        "current_password": "wrong-password", "new_password": "NewPassword123!",
+    }, headers={"X-CSRF-TOKEN": csrf})
+    assert mismatch.status_code == 400
+
+    changed = client.post("/api/auth/change-password", json={
+        "current_password": "Password123!", "new_password": "NewPassword123!",
+    }, headers={"X-CSRF-TOKEN": csrf})
+    assert changed.status_code == 200
+    assert user.check_password("NewPassword123!")
+
+    short_password = client.post("/api/auth/change-password", json={
+        "current_password": "NewPassword123!", "new_password": "short",
+    }, headers={"X-CSRF-TOKEN": csrf})
+    assert short_password.status_code == 422
+
+
 def test_step_up_auth_and_decorator(client, db_session):
     """
     Test step-up password confirmation endpoint and @require_step_up_auth decorator per §6 & §7.
